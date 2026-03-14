@@ -255,6 +255,7 @@ async def preview(
     h: int = Query(default=SCREEN_HEIGHT, ge=100, le=1200),
     no_cache: Optional[int] = Query(default=None),
     x_device_token: Optional[str] = Header(default=None),
+    x_inksight_llm_api_key: Optional[str] = Header(default=None),
     ink_session: Optional[str] = Cookie(default=None),
 ):
     if mac:
@@ -296,6 +297,7 @@ async def preview(
             preview_mode_override=parsed_mode_override,
             preview_memo_text=(memo_text if isinstance(memo_text, str) else None),
             current_user_id=current_user_id,
+            user_api_key=x_inksight_llm_api_key,
         )
         # 如果 API key 无效，返回 JSON 响应，提醒用户
         if api_key_invalid:
@@ -366,6 +368,7 @@ async def preview_stream(
     h: int = Query(default=SCREEN_HEIGHT, ge=100, le=1200),
     no_cache: Optional[int] = Query(default=None),
     x_device_token: Optional[str] = Header(default=None),
+    x_inksight_llm_api_key: Optional[str] = Header(default=None),
     ink_session: Optional[str] = Cookie(default=None),
 ):
     if mac:
@@ -408,6 +411,7 @@ async def preview_stream(
                 preview_mode_override=parsed_mode_override,
                 preview_memo_text=(memo_text if isinstance(memo_text, str) else None),
                 current_user_id=current_user_id,
+                user_api_key=x_inksight_llm_api_key,
             )
             # 如果 API key 无效，返回错误事件
             if api_key_invalid:

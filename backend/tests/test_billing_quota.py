@@ -82,7 +82,7 @@ class TestUserRegistration:
         assert row[0] == 1  # is_used
         assert row[1] == user_id  # used_by_user_id
         
-        # 5. 验证用户获得了 10 次免费额度
+        # 5. 验证用户获得了 50 次免费额度
         quota = await get_user_api_quota(user_id)
         assert quota is not None
         assert quota["free_quota_remaining"] == 50
