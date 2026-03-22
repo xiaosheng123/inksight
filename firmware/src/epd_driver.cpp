@@ -373,3 +373,108 @@ void epdSleep() {
 }
 
 #endif // EPD_PANEL_42
+
+// ==================== 威锋4in2b驱动实现 ====================
+
+void epd_wft_4in2b_init() {
+    Serial.println("Initializing WFT 4in2b...");
+    Serial.println("Model: WFT0420CZ15LW");
+    Serial.println("Size: 4.2 inch, 400x300, 3 colors");
+    
+    // 硬件复位
+    Serial.println("Hardware reset...");
+    digitalWrite(EPD_RST, LOW);
+    delay(200);
+    digitalWrite(EPD_RST, HIGH);
+    delay(200);
+    
+    // 发送初始化序列
+    Serial.println("Sending init sequence...");
+    epd_send_command(WFT_4IN2B_INIT);
+    delay(100);
+    
+    // 等待屏幕就绪
+    Serial.println("Waiting for BUSY...");
+    int timeout = 0;
+    while(digitalRead(EPD_BUSY) == LOW && timeout < 10000) {
+        delay(10);
+        timeout += 10;
+    }
+    
+    if(timeout >= 10000) {
+        Serial.println("BUSY timeout! Check BUSY pin connection.");
+    } else {
+        Serial.println("Screen ready!");
+    }
+    
+    // 初始清屏为白色
+    Serial.println("Clearing to white...");
+    epd_wft_4in2b_clear(1);
+    Serial.println("WFT 4in2b initialization complete!");
+}
+
+void epd_wft_4in2b_clear(uint8_t color) {
+    Serial.print("Clearing screen to color: ");
+    Serial.println(color);
+    
+    // 设置内存区域
+    epd_set_memory_area(0, 0, EPD_WIDTH-1, EPD_HEIGHT-1);
+    epd_set_memory_pointer(0, 0);
+    
+    // 根据颜色填充屏幕
+    uint8_t fill_data;
+    switch(color) {
+        case 0:  // 黑色
+            fill_data = 0x00;
+            break;
+        case 1:  // 白色
+            fill_data = 0xFF;
+            break;
+        case 2:  // 红色
+            fill_data = 0xAA;
+            break;
+        default:
+            fill_data = 0xFF;  // 默认为白色
+    }
+    
+    // 填充整个屏幕
+    size_t screen_bytes = (EPD_WIDTH * EPD_HEIGHT) / 8;
+    for(size_t i = 0; i < screen_bytes; i++) {
+        epd_send_data(fill_data);
+    }
+    
+    // 更新显示
+    epd_turn_on_display();
+    
+    Serial.println("Screen cleared!");
+}
+
+void epd_wft_4in2b_display(const uint8_t* image, size_t len) {
+    Serial.print("Displaying image on WFT 4in2b...");
+    
+    // 设置内存区域
+    epd_set_memory_area(0, 0, EPD_WIDTH-1, EPD_HEIGHT-1);
+    epd_set_memory_pointer(0, 0);
+    
+    // 发送图像数据
+    size_t screen_bytes = (EPD_WIDTH * EPD_HEIGHT) / 8;
+    for(size_t i = 0; i < screen_bytes && i < len; i++) {
+        epd_send_data(image[i]);
+    }
+    
+    // 更新显示
+    epd_turn_on_display();
+    
+    Serial.println("Image displayed!");
+}
+
+void epd_wft_4in2b_sleep() {
+    Serial.println("Entering sleep mode...");
+    // 睡眠模式序列
+    uint8_t sleep_mode[] = {0x50, 0x01, 0x17, 0x00};
+    epd_send_command(sleep_mode);
+    Serial.println("Sleep mode entered!");
+}
+
+
+
