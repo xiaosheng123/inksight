@@ -4,7 +4,7 @@ Discover (模式分享广场) 功能的集成测试
 import json
 import pytest
 from unittest.mock import patch, AsyncMock
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient
 
 from api.index import app
 from core.config_store import get_main_db, init_db, upsert_device_membership
@@ -21,6 +21,22 @@ async def client(tmp_path):
     from core import db as db_mod
     await db_mod.close_all()
 
+    async def _normalize_configs_table():
+        db = await get_main_db()
+        cur = await db.execute("PRAGMA table_info(configs)")
+        cols = {row[1] for row in await cur.fetchall()}
+        async def _add(col: str, ddl: str):
+            if col not in cols:
+                await db.execute(f"ALTER TABLE configs ADD COLUMN {col} {ddl}")
+        await _add("focus_listening", "INTEGER DEFAULT 0")
+        await _add("latitude", "REAL")
+        await _add("longitude", "REAL")
+        await _add("timezone", "TEXT DEFAULT ''")
+        await _add("admin1", "TEXT DEFAULT ''")
+        await _add("country", "TEXT DEFAULT ''")
+        await _add("is_active", "INTEGER DEFAULT 1")
+        await db.commit()
+
     # Redirect all database paths to temp files
     test_main_db = str(tmp_path / "test_inksight.db")
     test_cache_db = str(tmp_path / "test_cache.db")
@@ -34,10 +50,18 @@ async def client(tmp_path):
         await init_db()
         await init_stats_db()
         await init_cache_db()
+        await _normalize_configs_table()
 
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as c:
-            yield c
+        # httpx compatibility wrapper for different versions
+        try:
+            from httpx import ASGITransport  # type: ignore
+
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as c:
+                yield c
+        except Exception:
+            async with AsyncClient(app=app, base_url="http://test") as c:
+                yield c
 
         # Clean up connections after each test
         await db_mod.close_all()
@@ -374,9 +398,12 @@ class TestDiscoverAPI:
         """测试发布需要认证"""
         # 确保没有认证信息（不传 headers，也不传 cookies）
         # 创建一个新的客户端实例，确保没有之前的 cookies
-        from httpx import ASGITransport
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test", cookies={}) as clean_client:
+        try:
+            from httpx import ASGITransport  # type: ignore
+            _clean_ctx = AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies={})
+        except Exception:
+            _clean_ctx = AsyncClient(app=app, base_url="http://test", cookies={})
+        async with _clean_ctx as clean_client:
             resp = await clean_client.post(
                 "/api/discover/modes/publish",
                 headers={},  # 明确指定空的 headers
@@ -653,9 +680,12 @@ class TestDiscoverAPI:
             shared_mode_id = resp.json()["id"]
             
             # 尝试不认证安装 - 创建新的客户端实例，确保没有之前的 cookies
-            from httpx import ASGITransport
-            transport = ASGITransport(app=app)
-            async with AsyncClient(transport=transport, base_url="http://test", cookies={}) as clean_client:
+            try:
+                from httpx import ASGITransport  # type: ignore
+                _clean_ctx = AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies={})
+            except Exception:
+                _clean_ctx = AsyncClient(app=app, base_url="http://test", cookies={})
+            async with _clean_ctx as clean_client:
                 resp = await clean_client.post(
                     f"/api/discover/modes/{shared_mode_id}/install",
                     headers={},  # 明确指定空的 headers

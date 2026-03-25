@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import json
 import logging
 import secrets
 import hashlib
+import hmac
 import aiosqlite
 from datetime import datetime, timedelta
 
@@ -57,6 +59,7 @@ async def init_db():
                 time_slot_rules TEXT DEFAULT '[]',
                 memo_text TEXT DEFAULT '',
                 mode_overrides TEXT DEFAULT '{}',
+                focus_listening INTEGER DEFAULT 0,
                 is_active INTEGER DEFAULT 1,
                 created_at TEXT NOT NULL
             )
@@ -144,9 +147,34 @@ async def init_db():
                 runtime_mode TEXT DEFAULT 'interval',
                 expected_refresh_min INTEGER DEFAULT 0,
                 last_reconnect_regen_at TEXT DEFAULT '',
+                alert_token TEXT DEFAULT '',
+                alert_token_created_at TEXT DEFAULT '',
                 updated_at TEXT NOT NULL
             )
         """)
+        # Migration: add focus_listening column if missing
+        try:
+            cursor = await db.execute("PRAGMA table_info(configs)")
+            columns = await cursor.fetchall()
+            names = [c[1] for c in columns]
+            if "focus_listening" not in names:
+                await db.execute("ALTER TABLE configs ADD COLUMN focus_listening INTEGER DEFAULT 0")
+                await db.commit()
+        except Exception:
+            logger.warning("[MIGRATION] Failed to add focus_listening column", exc_info=True)
+
+        # Migration: add alert token columns if missing
+        try:
+            cursor = await db.execute("PRAGMA table_info(device_state)")
+            columns = await cursor.fetchall()
+            names = [c[1] for c in columns]
+            if "alert_token" not in names:
+                await db.execute("ALTER TABLE device_state ADD COLUMN alert_token TEXT DEFAULT ''")
+            if "alert_token_created_at" not in names:
+                await db.execute("ALTER TABLE device_state ADD COLUMN alert_token_created_at TEXT DEFAULT ''")
+            await db.commit()
+        except Exception:
+            logger.warning("[MIGRATION] Failed to add alert token columns", exc_info=True)
 
         # User system tables
         await db.execute("""
@@ -1338,8 +1366,8 @@ async def save_config(mac: str, data: dict) -> int:
            (mac, nickname, modes, refresh_strategy, character_tones,
             language, content_tone, city, latitude, longitude, timezone, admin1, country,
             refresh_interval, llm_provider, llm_model, image_provider, image_model,
-            countdown_events, time_slot_rules, memo_text, mode_overrides, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            countdown_events, time_slot_rules, memo_text, mode_overrides, focus_listening, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             mac,
             data.get("nickname", ""),
@@ -1363,6 +1391,7 @@ async def save_config(mac: str, data: dict) -> int:
             time_slot_rules_json,
             memo_text,
             mode_overrides_json,
+            1 if bool(data.get("is_focus_listening", False)) else 0,
             now,
         ),
     )
@@ -1383,6 +1412,125 @@ async def save_config(mac: str, data: dict) -> int:
     await db.commit()
     logger.info(f"[CONFIG SAVE] ✓ Saved as id={config_id}, is_active=1")
     return config_id
+
+
+async def update_focus_listening(mac: str, enabled: bool) -> bool:
+    """轻量更新 focus_listening：复制当前 active config 并仅修改开关字段。"""
+    normalized_mac = mac.upper()
+    db = await get_main_db()
+    prev = await get_active_config(normalized_mac)
+    if not prev:
+        return False
+
+    for attempt in range(5):
+        try:
+            await db.execute("UPDATE configs SET is_active = 0 WHERE mac = ?", (normalized_mac,))
+            break
+        except Exception as e:
+            if "database is locked" in str(e).lower():
+                await asyncio.sleep(0.15 * (attempt + 1))
+                continue
+            raise
+    else:
+        return False
+
+    prev_modes = prev.get("modes", DEFAULT_MODES)
+    modes_str = ",".join(prev_modes) if isinstance(prev_modes, list) else str(prev_modes or ",".join(DEFAULT_MODES))
+    prev_tones = prev.get("character_tones", [])
+    tones_str = ",".join(prev_tones) if isinstance(prev_tones, list) else str(prev_tones or "")
+    ce_val = prev.get("countdown_events", "[]")
+    countdown_events_json = ce_val if isinstance(ce_val, str) else json.dumps(ce_val, ensure_ascii=False)
+    tsr_val = prev.get("time_slot_rules", "[]")
+    time_slot_rules_json = tsr_val if isinstance(tsr_val, str) else json.dumps(tsr_val, ensure_ascii=False)
+    mo_val = prev.get("mode_overrides", "{}")
+    mode_overrides_json = mo_val if isinstance(mo_val, str) else json.dumps(mo_val, ensure_ascii=False)
+
+    for attempt in range(5):
+        try:
+            await db.execute(
+                """INSERT INTO configs
+                   (mac, nickname, modes, refresh_strategy, character_tones,
+                    language, content_tone, city, refresh_interval, llm_provider, llm_model, image_provider, image_model,
+                    countdown_events, time_slot_rules, memo_text, mode_overrides, focus_listening, is_active, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)""",
+                (
+                    normalized_mac,
+                    prev.get("nickname", "") or "",
+                    modes_str,
+                    prev.get("refresh_strategy", DEFAULT_REFRESH_STRATEGY),
+                    tones_str,
+                    prev.get("language", DEFAULT_LANGUAGE),
+                    prev.get("content_tone", DEFAULT_CONTENT_TONE),
+                    prev.get("city", DEFAULT_CITY),
+                    int(prev.get("refresh_interval", DEFAULT_REFRESH_INTERVAL) or DEFAULT_REFRESH_INTERVAL),
+                    prev.get("llm_provider", DEFAULT_LLM_PROVIDER),
+                    prev.get("llm_model", DEFAULT_LLM_MODEL),
+                    prev.get("image_provider", DEFAULT_IMAGE_PROVIDER),
+                    prev.get("image_model", DEFAULT_IMAGE_MODEL),
+                    countdown_events_json,
+                    time_slot_rules_json,
+                    str(prev.get("memo_text", "") or ""),
+                    mode_overrides_json,
+                    1 if enabled else 0,
+                    datetime.now().isoformat(),
+                ),
+            )
+            await db.execute(
+                """DELETE FROM configs
+                   WHERE mac = ? AND id NOT IN (
+                       SELECT id FROM configs
+                       WHERE mac = ?
+                       ORDER BY created_at DESC
+                       LIMIT 5
+                   )""",
+                (normalized_mac, normalized_mac),
+            )
+            await db.commit()
+            return True
+        except Exception as e:
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+            if "database is locked" in str(e).lower():
+                await asyncio.sleep(0.2 * (attempt + 1))
+                continue
+            raise
+    return False
+
+
+async def get_or_create_alert_token(mac: str, regenerate: bool = False) -> str:
+    normalized_mac = mac.upper()
+    now = datetime.now().isoformat()
+    db = await get_main_db()
+    cursor = await db.execute("SELECT alert_token FROM device_state WHERE mac = ?", (normalized_mac,))
+    row = await cursor.fetchone()
+    existing = (row[0] if row and row[0] else "").strip() if row else ""
+    if existing and not regenerate:
+        return existing
+    token = secrets.token_urlsafe(32)
+    await db.execute(
+        """INSERT INTO device_state (mac, alert_token, alert_token_created_at, updated_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(mac) DO UPDATE SET alert_token = ?, alert_token_created_at = ?, updated_at = ?""",
+        (normalized_mac, token, now, now, token, now, now),
+    )
+    await db.commit()
+    return token
+
+
+async def validate_alert_token(mac: str, token: str) -> bool:
+    normalized_mac = mac.upper()
+    provided = (token or "").strip()
+    if not provided:
+        return False
+    db = await get_main_db()
+    cursor = await db.execute("SELECT alert_token FROM device_state WHERE mac = ?", (normalized_mac,))
+    row = await cursor.fetchone()
+    expected = (row[0] if row and row[0] else "").strip() if row else ""
+    if not expected:
+        return False
+    return hmac.compare_digest(expected, provided)
 
 
 def _row_to_dict(row, columns) -> dict:
@@ -1427,6 +1575,8 @@ def _row_to_dict(row, columns) -> dict:
         mo = {}
     d["mode_overrides"] = mo
     d["modeOverrides"] = mo
+    d["focus_listening"] = int(d.get("focus_listening", 0) or 0)
+    d["is_focus_listening"] = bool(d["focus_listening"])
     # Add mac field for cycle index tracking
     if "mac" not in d:
         d["mac"] = d.get("mac", "default")
@@ -1839,11 +1989,13 @@ async def get_user_llm_config(user_id: int) -> dict | None:
     has_image_config = "image_provider" in columns and "image_api_key" in columns
     has_model_column = "model" in columns
     has_image_model_column = "image_model" in columns
+    has_image_base_url_column = "image_base_url" in columns
     
     # Build SELECT with backward compatibility across schema versions.
     if has_access_mode_column and has_image_config and has_model_column and has_image_model_column:
+        extra_cols = ", image_base_url" if has_image_base_url_column else ""
         cursor = await db.execute(
-            "SELECT llm_access_mode, provider, api_key, base_url, image_provider, image_api_key, model, image_model FROM user_llm_config WHERE user_id = ?",
+            f"SELECT llm_access_mode, provider, api_key, base_url, image_provider, image_api_key, model, image_model{extra_cols} FROM user_llm_config WHERE user_id = ?",
             (user_id,),
         )
     elif has_access_mode_column and has_image_config and has_model_column:
@@ -1909,6 +2061,9 @@ async def get_user_llm_config(user_id: int) -> dict | None:
         idx += 1
     if has_image_model_column and len(row) > idx:
         result["image_model"] = row[idx] or ""
+        idx += 1
+    if has_image_base_url_column and len(row) > idx:
+        result["image_base_url"] = row[idx] or ""
     return result
 
 
@@ -1922,6 +2077,7 @@ async def save_user_llm_config(
     image_provider: str = "aliyun",
     image_model: str = "",
     image_api_key: str = "",
+    image_base_url: str = "",
 ) -> bool:
     """保存用户级别的 LLM 配置。"""
     from .crypto import encrypt_api_key
@@ -1939,6 +2095,7 @@ async def save_user_llm_config(
     has_image_config = "image_provider" in columns and "image_api_key" in columns
     has_model_column = "model" in columns
     has_image_model_column = "image_model" in columns
+    has_image_base_url_column = "image_base_url" in columns
 
     # 如果表没有 llm_access_mode 列，先添加
     if not has_access_mode_column:
@@ -1976,12 +2133,20 @@ async def save_user_llm_config(
         except Exception as e:
             logger.warning(f"[USER_LLM_CONFIG] Failed to add image_model column: {e}")
             await db.rollback()
+    if not has_image_base_url_column:
+        try:
+            await db.execute("ALTER TABLE user_llm_config ADD COLUMN image_base_url TEXT DEFAULT ''")
+            await db.commit()
+            has_image_base_url_column = True
+        except Exception as e:
+            logger.warning(f"[USER_LLM_CONFIG] Failed to add image_base_url column: {e}")
+            await db.rollback()
     
     try:
         if has_access_mode_column and has_image_config and has_image_model_column:
             await db.execute(
-                """INSERT INTO user_llm_config (user_id, llm_access_mode, provider, model, api_key, base_url, image_provider, image_api_key, image_model, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """INSERT INTO user_llm_config (user_id, llm_access_mode, provider, model, api_key, base_url, image_provider, image_api_key, image_model, image_base_url, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(user_id) DO UPDATE SET
                        llm_access_mode = excluded.llm_access_mode,
                        provider = excluded.provider,
@@ -1991,8 +2156,9 @@ async def save_user_llm_config(
                        image_provider = excluded.image_provider,
                        image_api_key = excluded.image_api_key,
                        image_model = excluded.image_model,
+                       image_base_url = excluded.image_base_url,
                        updated_at = excluded.updated_at""",
-                (user_id, llm_access_mode, provider, model, encrypted_key, base_url, image_provider, encrypted_image_key, image_model, now),
+                (user_id, llm_access_mode, provider, model, encrypted_key, base_url, image_provider, encrypted_image_key, image_model, image_base_url, now),
             )
         elif has_access_mode_column and has_image_config:
             await db.execute(
