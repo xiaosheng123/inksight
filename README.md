@@ -130,3 +130,48 @@ If you are a developer, want to run your own local deployment, or want to go bey
 - BiliBili: [https://www.bilibili.com/video/BV1nSNcziE7q/](https://www.bilibili.com/video/BV1nSNcziE7q/)
 
 ![QQ Group QR Code](images/QQ_EN.jpg)
+
+---
+
+## Supported Display Panels
+
+InkSight firmware supports multiple 4.2" e-ink panel types via different build environments:
+
+### 4.2" Monochrome (BW) — Software SPI
+| Panel | Build Environment | Driver |
+|-------|------------------|--------|
+| 微雪v2 SSD1683 (BW) | `epd_42_wsv2_ssd1683_c3_promini` | Software bit-bang SPI |
+| 中景园 SSD1683 (BW) | `epd_42_zhongjingyuan_bw_ssd1683_c3_promini` | Software bit-bang SPI |
+| Waveshare UC8176/IL0398 | `epd_42_waveshare_uc8176_c3_promini` | Hardware SPI (Waveshare official driver) |
+
+### 4.2" Three-Color (BWR) — Hardware SPI via GxEPD2
+| Panel | Build Environment |
+|-------|------------------|
+| 微雪v2 三色 GDEY042T81 | `epd_42_gxepd2_gdey042t81_ssd168
+
+---
+
+## Supported Display Panels
+
+InkSight firmware supports multiple 4.2" e-ink panel types via different build environments:
+
+### 4.2" Monochrome (BW)
+| Panel | Build Environment | Driver |
+|-------|------------------|--------|
+| 微雪v2 SSD1683 (BW) | `epd_42_wsv2_ssd1683_c3_promini` | Software bit-bang SPI |
+| 中景园 SSD1683 (BW) | `epd_42_zhongjingyuan_bw_ssd1683_c3_promini` | Software bit-bang SPI |
+| Waveshare UC8176/IL0398 | `epd_42_waveshare_uc8176_c3_promini` | Hardware SPI (Waveshare official driver) |
+
+### 4.2" Three-Color (BWR) via GxEPD2
+| Panel | Build Environment |
+|-------|------------------|
+| 微雪v2 三色 GDEY042T81 | `epd_42_gxepd2_gdey042t81_ssd1683_c3_promini` |
+| 微雪 IL0398 三色 | `epd_42_gxepd2_gdew042t2_il0398_c3_promini` |
+| 微雪 UC8176 三色 | `epd_42_gxepd2_gdew042m01_uc8176_c3_promini` |
+| 中景园 GYE042A87 三色 | `epd_42_zhongjingyuan_bw_gxepd2_gye042a87_c3_promini` |
+
+### Build Command
+```bash
+cd firmware
+pio run -e <environment_name>
+```

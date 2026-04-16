@@ -35,13 +35,30 @@
 //   2.9"  (296x128)
 //   5.83" (648x480)
 //   7.5"  (800x480)
-#ifndef EPD_WIDTH
-#define EPD_WIDTH  400
+//   7.5"  (640x384, GxEPD2_750c)
+#if defined(EPD_PANEL_750C)
+  #define EPD_WIDTH  640
+  #define EPD_HEIGHT 384
+#elif defined(EPD_PANEL_75)
+  #define EPD_WIDTH  800
+  #define EPD_HEIGHT 480
+#elif defined(EPD_PANEL_29)
+  #define EPD_WIDTH  296
+  #define EPD_HEIGHT 128
+#elif defined(EPD_PANEL_583)
+  #define EPD_WIDTH  648
+  #define EPD_HEIGHT 480
+#elif defined(EPD_PANEL_42_SSD1683_BW) || defined(EPD_PANEL_42_DKE_RY683) || defined(EPD_PANEL_42_GDEM042F52) || defined(EPD_PANEL_42_GXEPD2_T81) || defined(EPD_PANEL_42_GXEPD2_GYE042A87) || defined(EPD_PANEL_42_GXEPD2_420) || defined(EPD_PANEL_42_GXEPD2_M01) || defined(EPD_PANEL_42_WAVESHARE)
+  #define EPD_WIDTH  400
+  #define EPD_HEIGHT 300
+#else
+  #ifndef EPD_WIDTH
+    #define EPD_WIDTH  400
+  #endif
+  #ifndef EPD_HEIGHT
+    #define EPD_HEIGHT 300
+  #endif
 #endif
-#ifndef EPD_HEIGHT
-#define EPD_HEIGHT 300
-#endif
-
 static const int W = EPD_WIDTH;
 static const int H = EPD_HEIGHT;
 static const int ROW_BYTES   = W / 8;
