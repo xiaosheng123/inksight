@@ -127,6 +127,48 @@ cd firmware
 pio run -e <environment_name>
 ```
 
+## 硬件接线定义
+
+### ESP32-C3（标准接线）
+| GPIO | 功能 | 说明 |
+|------|------|------|
+| GPIO6 | MOSI | SPI 数据输出 |
+| GPIO4 | SCK | SPI 时钟 |
+| GPIO7 | CS | 片选 |
+| GPIO1 | DC | 数据/命令切换 |
+| GPIO2 | RST | 复位 |
+| GPIO10 | BUSY | 忙标志 |
+| GPIO0 | BAT_ADC | 电池电压检测 |
+| GPIO9 | CFG_BTN | 配置按钮 |
+| GPIO3 | LED | 状态指示灯 |
+
+### ESP32-WROOM32E
+| GPIO | 功能 | 说明 |
+|------|------|------|
+| GPIO12 | MOSI | SPI 数据输出 |
+| GPIO15 | SCK | SPI 时钟 |
+| GPIO16 | CS | 片选 |
+| GPIO11 | DC | 数据/命令切换 |
+| GPIO10 | RST | 复位 |
+| GPIO9 | BUSY | 忙标志 |
+| GPIO35 | BAT_ADC | 电池电压检测 |
+| GPIO0 | CFG_BTN | 配置按钮 |
+| GPIO2 | LED | 状态指示灯 |
+
+## 适配屏幕型号速查
+
+| 型号 | 类型 | 分辨率 | 推荐编译环境 |
+|------|------|--------|------------|
+| **WFT0420CZ15LW**（微雪 4.2" 三色 V2） | 三色 BWR | 400×300 | `epd_42_gxepd2_gdew042m01_uc8176_c3_promini` |
+| 微雪 4.2" 黑白 SSD1683 | 黑白 BW | 400×300 | `epd_42_wsv2_ssd1683_c3_promini` |
+| 微雪 4.2" 三色 GDEY042T81 | 三色 BWR | 400×300 | `epd_42_gxepd2_gdey042t81_ssd1683_c3_promini` |
+| 微雪 4.2" 三色 IL0398 | 三色 BWR | 400×300 | `epd_42_gxepd2_gdew042t2_il0398_c3_promini` |
+| 中景园 4.2" 黑白 SSD1683 | 黑白 BW | 400×300 | `epd_42_zhongjingyuan_bw_ssd1683_c3_promini` |
+| 中景园 4.2" 三色 GYE042A87 | 三色 BWR | 400×300 | `epd_42_zhongjingyuan_bw_gxepd2_gye042a87_c3_promini` |
+| Waveshare UC8176/IL0398（通用） | 黑白 BW | 400×300 | `epd_42_waveshare_uc8176_c3_promini` |
+
+> **新手推荐**：从微雪 4.2" 黑白 SSD1683 开始，生态最成熟，驱动最稳定。
+
 ## 部署自己的后端
 
 如果你想自己部署或二次开发：
