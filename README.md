@@ -155,19 +155,12 @@ pio run -e <environment_name>
 | GPIO0 | CFG_BTN | 配置按钮 |
 | GPIO2 | LED | 状态指示灯 |
 
-## 适配屏幕型号速查
+## 适配屏幕型号
 
-| 型号 | 类型 | 分辨率 | 推荐编译环境 |
-|------|------|--------|------------|
-| **WFT0420CZ15LW**（微雪 4.2" 三色 V2） | 三色 BWR | 400×300 | `epd_42_gxepd2_gdew042m01_uc8176_c3_promini` |
-| 微雪 4.2" 黑白 SSD1683 | 黑白 BW | 400×300 | `epd_42_wsv2_ssd1683_c3_promini` |
-| 微雪 4.2" 三色 GDEY042T81 | 三色 BWR | 400×300 | `epd_42_gxepd2_gdey042t81_ssd1683_c3_promini` |
-| 微雪 4.2" 三色 IL0398 | 三色 BWR | 400×300 | `epd_42_gxepd2_gdew042t2_il0398_c3_promini` |
-| 中景园 4.2" 黑白 SSD1683 | 黑白 BW | 400×300 | `epd_42_zhongjingyuan_bw_ssd1683_c3_promini` |
-| 中景园 4.2" 三色 GYE042A87 | 三色 BWR | 400×300 | `epd_42_zhongjingyuan_bw_gxepd2_gye042a87_c3_promini` |
-| Waveshare UC8176/IL0398（通用） | 黑白 BW | 400×300 | `epd_42_waveshare_uc8176_c3_promini` |
-
-> **新手推荐**：从微雪 4.2" 黑白 SSD1683 开始，生态最成熟，驱动最稳定。
+| 型号 | 类型 | 编译环境 |
+|------|------|---------|
+| 微雪 4.2" 黑白 SSD1683 | 黑白 BW | `epd_42_wsv2_ssd1683_c3_promini` |
+| 微雪 4.2" 三色（Waveshare UC8176/IL0398） | 三色 BWR | `epd_42_waveshare_uc8176_c3_promini` |
 
 ## 部署自己的后端
 
