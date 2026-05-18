@@ -1431,9 +1431,8 @@ bool voiceWsOpen(int sampleRate, int screenW, int screenH, bool includeImage) {
     }
 
     String mac = WiFi.macAddress();
-    String path = basePath + "/api/device/" + mac + "/voice/ws";
+    String path = basePath + "/api/device/" + mac + "/voice/ws?token=" + cfgDeviceToken;
     String extraHeaders = String("X-Device-Token: ") + cfgDeviceToken;
-
     String startMsg = String("{\"type\":\"session.start\",\"sample_rate\":") + sampleRate
                     + ",\"w\":" + screenW
                     + ",\"h\":" + screenH

@@ -396,20 +396,31 @@ async def device_voice_ws(
 ):
     mac = validate_mac_param(mac)
     x_device_token = websocket.headers.get("x-device-token") or websocket.query_params.get("token")
+
+    # Accept immediately so the client (ESP32) gets HTTP 101 without waiting for DB queries.
+    # Auth and session setup happen right after; if they fail we close with an error code.
+    await websocket.accept()
+    logger.info("[VOICE_WS] accepted mac=%s has_token=%s", mac, bool(x_device_token))
+
     try:
         await require_device_token(mac, x_device_token, websocket.headers.get("accept-language"))
     except HTTPException as exc:
+        logger.warning("[VOICE_WS] auth failed mac=%s status=%d detail=%s", mac, exc.status_code, exc.detail)
         await websocket.close(code=1008, reason=str(exc.detail)[:120])
         return
 
-    settings = await _resolve_device_voice_runtime_settings(mac)
-    session = create_voice_ws_session(
-        settings=settings,
-        access_user_id=None,
-        access_mac=mac,
-    )
-    await websocket.accept()
-    logger.info("[VOICE_WS] accepted mac=%s session_id=%s", mac, session.session_id)
+    try:
+        settings = await _resolve_device_voice_runtime_settings(mac)
+        session = create_voice_ws_session(
+            settings=settings,
+            access_user_id=None,
+            access_mac=mac,
+        )
+        logger.info("[VOICE_WS] session ready mac=%s session_id=%s provider=%s", mac, getattr(session, "session_id", "?"), getattr(settings, "llm_provider", "?"))
+    except Exception:
+        logger.exception("[VOICE_WS] session setup failed mac=%s", mac)
+        await websocket.close(code=1011, reason="internal error")
+        return
 
     async def _sender() -> None:
         async for event in iter_voice_ws_events(session):
@@ -430,6 +441,7 @@ async def device_voice_ws(
                 ws_message.get("type"),
             )
             if ws_message.get("type") == "websocket.disconnect":
+                logger.info("[VOICE_WS] client disconnected mac=%s code=%s", mac, ws_message.get("code"))
                 break
 
             if "bytes" in ws_message and ws_message["bytes"]:
