@@ -46,6 +46,9 @@ static void voiceWsSocketEvent(WStype_t type, uint8_t *payload, size_t length);
 
 static WebSocketsClient gVoiceWsClient;
 static bool gVoiceWsConnected = false;
+static unsigned long gVoiceWsOpenStartedAt = 0;
+static unsigned long gVoiceWsConnectedAt = 0;
+static bool gVoiceWsDisconnected = false;
 static bool gVoiceWsConfigured = false;
 static bool gVoiceWsBinaryAudioEnabled = false;
 static bool gVoiceWsOpusEnabled = false;
@@ -1284,12 +1287,33 @@ static void voiceWsSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
     switch (type) {
         case WStype_CONNECTED:
             gVoiceWsConnected = true;
-            Serial.println("[VOICE_WS] connected");
+            gVoiceWsDisconnected = false;
+            gVoiceWsConnectedAt = millis();
+            Serial.printf("[VOICE_WS] connected (heap=%u)\n", ESP.getFreeHeap());
             return;
-        case WStype_DISCONNECTED:
+        case WStype_DISCONNECTED: {
+            bool wasConnected = gVoiceWsConnected;
             gVoiceWsConnected = false;
-            Serial.println("[VOICE_WS] disconnected");
+            gVoiceWsDisconnected = true;
+            if (gVoiceWsConnectedAt > 0) {
+                Serial.printf("[VOICE_WS] disconnected after %lu ms\n", millis() - gVoiceWsConnectedAt);
+            } else if (gVoiceWsOpenStartedAt > 0) {
+                Serial.printf("[VOICE_WS] disconnected before connected after %lu ms\n", millis() - gVoiceWsOpenStartedAt);
+            } else {
+                Serial.println("[VOICE_WS] disconnected before connected");
+            }
+            if (payload != nullptr && length > 0) {
+                Serial.printf("[VOICE_WS] disconnected payload len=%u: ", (unsigned)length);
+                for (size_t i = 0; i < length; i++) Serial.print((char)payload[i]);
+                Serial.println();
+            } else {
+                Serial.println("[VOICE_WS] disconnected (no payload)");
+            }
+            if (wasConnected) {
+                gVoiceWsConnectedAt = 0;
+            }
             return;
+        }
         case WStype_BIN: {
             if (payload == nullptr || length == 0) return;
             VoiceWsEvent event;
@@ -1304,9 +1328,14 @@ static void voiceWsSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
             return;
         }
         case WStype_TEXT:
+            Serial.printf("[VOICE_WS] recv text len=%u: %.120s\n", (unsigned)length, payload ? (char *)payload : "");
             break;
         case WStype_ERROR:
-            Serial.println("[VOICE_WS] socket error");
+            if (payload && length > 0) {
+                Serial.printf("[VOICE_WS] socket error: %.*s\n", (int)length, (char *)payload);
+            } else {
+                Serial.println("[VOICE_WS] socket error (no payload)");
+            }
             return;
         default:
             return;
@@ -1381,6 +1410,7 @@ static void voiceWsSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
 }
 
 bool voiceWsOpen(int sampleRate, int screenW, int screenH, bool includeImage) {
+    Serial.printf("[VOICE_WS] free heap before open: %u\n", ESP.getFreeHeap());
     if (WiFi.status() != WL_CONNECTED) return false;
     if (!ensureDeviceToken()) return false;
 
@@ -1390,8 +1420,6 @@ bool voiceWsOpen(int sampleRate, int screenW, int screenH, bool includeImage) {
             return false;
         }
     }
-
-    voiceWsClose();
 
     bool useSSL = false;
     String host;
@@ -1404,33 +1432,8 @@ bool voiceWsOpen(int sampleRate, int screenW, int screenH, bool includeImage) {
 
     String mac = WiFi.macAddress();
     String path = basePath + "/api/device/" + mac + "/voice/ws";
+    String extraHeaders = String("X-Device-Token: ") + cfgDeviceToken;
 
-    gVoiceWsClient.onEvent(voiceWsSocketEvent);
-    gVoiceWsClient.setReconnectInterval(0);
-    String extraHeaders = String("X-Device-Token: ") + cfgDeviceToken + "\r\n";
-    gVoiceWsClient.setExtraHeaders(extraHeaders.c_str());
-    if (useSSL) {
-        gVoiceWsClient.beginSslWithCA(host.c_str(), port, path.c_str(), ROOT_CA);
-    } else {
-        gVoiceWsClient.begin(host.c_str(), port, path.c_str());
-    }
-    gVoiceWsClient.enableHeartbeat(15000, 3000, 2);
-    gVoiceWsConfigured = true;
-
-    unsigned long startAt = millis();
-    while (!gVoiceWsConnected && millis() - startAt < 6000UL) {
-        gVoiceWsClient.loop();
-        delay(10);
-    }
-    if (!gVoiceWsConnected) {
-        Serial.println("[VOICE_WS] connect timeout");
-        voiceWsClose();
-        return false;
-    }
-
-    gVoiceWsBinaryAudioEnabled = false;
-    gVoiceWsOpusEnabled = false;
-    gVoiceWsServerVadEnabled = false;
     String startMsg = String("{\"type\":\"session.start\",\"sample_rate\":") + sampleRate
                     + ",\"w\":" + screenW
                     + ",\"h\":" + screenH
@@ -1442,12 +1445,96 @@ bool voiceWsOpen(int sampleRate, int screenW, int screenH, bool includeImage) {
                     + ",\"audio_codec\":\"pcm\""
 #endif
                     + "}";
-    if (!gVoiceWsClient.sendTXT(startMsg)) {
-        Serial.println("[VOICE_WS] failed to send session.start");
+
+    for (int attempt = 1; attempt <= 3; attempt++) {
         voiceWsClose();
-        return false;
+        gVoiceWsConnected = false;
+        gVoiceWsDisconnected = false;
+        gVoiceWsBinaryAudioEnabled = false;
+        gVoiceWsOpusEnabled = false;
+        gVoiceWsServerVadEnabled = false;
+        gVoiceWsOpenStartedAt = millis();
+        gVoiceWsConnectedAt = 0;
+
+        gVoiceWsClient.onEvent(voiceWsSocketEvent);
+        gVoiceWsClient.setReconnectInterval(60000);
+        gVoiceWsClient.setExtraHeaders(extraHeaders.c_str());
+
+        Serial.printf("[VOICE_WS] attempt %d/3 %s://%s:%u%s\n",
+            attempt, useSSL ? "wss" : "ws", host.c_str(), port, path.c_str());
+
+        if (useSSL) {
+            gVoiceWsClient.beginSSL(host.c_str(), port, path.c_str(), nullptr, "");
+        } else {
+            gVoiceWsClient.begin(host.c_str(), port, path.c_str(), "");
+        }
+        gVoiceWsConfigured = true;
+
+        unsigned long startAt = millis();
+        while (!gVoiceWsConnected && !gVoiceWsDisconnected && millis() - startAt < 15000UL) {
+            gVoiceWsClient.loop();
+            delay(10);
+        }
+        if (!gVoiceWsConnected) {
+            Serial.printf("[VOICE_WS] attempt %d failed: %s\n", attempt,
+                gVoiceWsDisconnected ? "disconnected before connected" : "connect timeout");
+            voiceWsClose();
+            delay(500);
+            continue;
+        }
+
+        // Stabilize: loop for 500ms, bail if connection drops.
+        bool stable = true;
+        unsigned long stableStart = millis();
+        while (millis() - stableStart < 500UL) {
+            gVoiceWsClient.loop();
+            if (!gVoiceWsConnected) {
+                Serial.printf("[VOICE_WS] attempt %d failed: dropped during stabilization\n", attempt);
+                stable = false;
+                break;
+            }
+            delay(10);
+        }
+        if (!stable) {
+            voiceWsClose();
+            delay(500);
+            continue;
+        }
+
+        Serial.printf("[VOICE_WS] sending session.start len=%u\n", (unsigned)startMsg.length());
+        if (!gVoiceWsClient.sendTXT(startMsg)) {
+            Serial.printf("[VOICE_WS] attempt %d failed: sendTXT returned false\n", attempt);
+            voiceWsClose();
+            delay(500);
+            continue;
+        }
+        Serial.println("[VOICE_WS] session.start sent OK");
+
+        // Flush: loop for 500ms to ensure the frame is sent.
+        bool flushed = true;
+        unsigned long flushStart = millis();
+        while (millis() - flushStart < 500UL) {
+            gVoiceWsClient.loop();
+            if (!gVoiceWsConnected) {
+                Serial.printf("[VOICE_WS] attempt %d failed: dropped after session.start\n", attempt);
+                flushed = false;
+                break;
+            }
+            delay(10);
+        }
+        if (!flushed) {
+            voiceWsClose();
+            delay(500);
+            continue;
+        }
+
+        gVoiceWsClient.enableHeartbeat(15000, 3000, 2);
+        Serial.printf("[VOICE_WS] attempt %d connected successfully\n", attempt);
+        return true;
     }
-    return true;
+
+    Serial.println("[VOICE_WS] all 3 attempts failed");
+    return false;
 }
 
 bool voiceWsConnected() {
@@ -1549,6 +1636,9 @@ void voiceWsClose() {
     }
     gVoiceWsConfigured = false;
     gVoiceWsConnected = false;
+    gVoiceWsDisconnected = false;
+    gVoiceWsOpenStartedAt = 0;
+    gVoiceWsConnectedAt = 0;
     gVoiceWsBinaryAudioEnabled = false;
     gVoiceWsOpusEnabled = false;
     gVoiceWsServerVadEnabled = false;

@@ -9,7 +9,7 @@
 #include <WiFi.h>
 
 #include "config.h"
-#if defined(BOARD_PROFILE_ESP32_WROOM32E)
+#if defined(BOARD_HAS_AUDIO)
 #include "audio.h"
 #include "audio_codec.h"
 #include "audio_service.h"
@@ -214,7 +214,7 @@ static bool checkAiChatShortPress() {
     return duration >= (unsigned long)SHORT_PRESS_MIN_MS && duration < (unsigned long)CFG_BTN_HOLD_MS;
 }
 
-#if defined(BOARD_PROFILE_ESP32_WROOM32E)
+#if defined(BOARD_HAS_AUDIO)
 static void drainSendQueue(AudioService &as) {
     AsAudioPacket* pkt = nullptr;
     while (as.PollSendPacket(pkt)) {
@@ -743,7 +743,7 @@ void setup() {
         return;
     }
 
-#if AUTO_BOOT_AI_CHAT && defined(BOARD_PROFILE_ESP32_WROOM32E)
+#if AUTO_BOOT_AI_CHAT && defined(BOARD_HAS_AUDIO)
     Serial.println("[AI CHAT] Auto boot enabled, entering conversation mode");
     ledFeedback("ack");
     g_userAborted = false;
@@ -934,6 +934,7 @@ void loop() {
                     }
                 }
                 if (reconnected) {
+                    lastContentChecksum = 0;  // force display refresh after AI chat UI
                     triggerImmediateRefresh(false, true);
                 } else {
                     Serial.println("[AI CHAT] WiFi reconnect failed after conversation, will retry next cycle");
@@ -1192,7 +1193,7 @@ static bool decodeVoiceBmpToFrameBuffer(const uint8_t *bmpBytes, size_t bmpLen) 
 // ── Single voice turn (short-press, one Q&A) ────────────────
 
 static void runSingleVoiceTurn() {
-#if !defined(BOARD_PROFILE_ESP32_WROOM32E)
+#if !defined(BOARD_HAS_AUDIO)
     return;
 #else
     showVoiceIndicator(true);
@@ -1348,7 +1349,7 @@ static void runSingleVoiceTurn() {
 // ── AI Chat conversation (display build, full-duplex) ───────
 
 static bool runAiChatConversation() {
-#if !defined(BOARD_PROFILE_ESP32_WROOM32E)
+#if !defined(BOARD_HAS_AUDIO)
     showAiChatStatus("AI CHAT", "unsupported on this board");
     return false;
 #else
@@ -1389,7 +1390,7 @@ static bool runAiChatConversation() {
     Serial.printf("[VOICE_PERF][DEVICE] ws_open_ms=%lu\n", millis() - wsOpenStartedAt);
 
     unsigned long readyStartAt = millis();
-    while (!sessionReady && millis() - readyStartAt < 6000UL) {
+    while (!sessionReady && millis() - readyStartAt < 15000UL) {
         voiceWsLoop();
         VoiceWsEvent readyEvent;
         while (voiceWsPollEvent(readyEvent)) {
@@ -1828,7 +1829,7 @@ static void checkAiChatButton() {
                    (millis() - ctx.aiBtnPressStart >= (unsigned long)AI_CHAT_BTN_HOLD_MS)) {
             Serial.printf("[AI CHAT] Switch held for %dms, queue enter ai chat\n", AI_CHAT_BTN_HOLD_MS);
             ctx.wantEnterAiChatMode = true;
-            ctx.aiBtnPressStart = millis();
+            ctx.aiBtnPressStart = 0;
         }
     } else {
         if (ctx.aiBtnPressStart > 0 && !ctx.wantEnterAiChatMode) {

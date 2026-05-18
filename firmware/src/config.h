@@ -36,6 +36,19 @@
 #define PIN_CFG_BTN    0
 #define PIN_LED        2
 #define PIN_AI_CHAT_SW 23
+#define BOARD_HAS_AUDIO
+#elif defined(BOARD_PROFILE_SMT_WROOM32E)
+#define PIN_EPD_MOSI   14
+#define PIN_EPD_SCK    13
+#define PIN_EPD_CS     15
+#define PIN_EPD_DC     27
+#define PIN_EPD_RST    26
+#define PIN_EPD_BUSY   25
+#define PIN_BAT_ADC    35
+#define PIN_CFG_BTN    0
+#define PIN_LED        2
+#define PIN_AI_CHAT_SW 4
+#define BOARD_HAS_AUDIO
 #elif defined(BOARD_PROFILE_SMT_C3)
 #define PIN_EPD_MOSI   6
 #define PIN_EPD_SCK    4

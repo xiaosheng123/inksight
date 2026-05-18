@@ -409,6 +409,7 @@ async def device_voice_ws(
         access_mac=mac,
     )
     await websocket.accept()
+    logger.info("[VOICE_WS] accepted mac=%s session_id=%s", mac, session.session_id)
 
     async def _sender() -> None:
         async for event in iter_voice_ws_events(session):
@@ -421,6 +422,13 @@ async def device_voice_ws(
     try:
         while True:
             ws_message = await websocket.receive()
+            logger.info(
+                "[VOICE_WS] recv mac=%s session_id=%s keys=%s type=%s",
+                mac,
+                session.session_id,
+                list(ws_message.keys()),
+                ws_message.get("type"),
+            )
             if ws_message.get("type") == "websocket.disconnect":
                 break
 

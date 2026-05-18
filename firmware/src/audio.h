@@ -9,7 +9,7 @@
 #define I2S_MIC_WS   19
 #define I2S_MIC_SD   33
 
-#if defined(BOARD_PROFILE_ESP32_WROOM32E)
+#if defined(BOARD_HAS_AUDIO)
 #define I2S_SPK_SCK  17
 #define I2S_SPK_WS   16
 #define I2S_SPK_DOUT 22

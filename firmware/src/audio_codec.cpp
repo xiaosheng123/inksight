@@ -1,5 +1,5 @@
 #include "config.h"
-#if defined(BOARD_PROFILE_ESP32_WROOM32E)
+#if defined(BOARD_HAS_AUDIO)
 
 #include "audio_codec.h"
 #include "audio.h"
