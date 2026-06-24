@@ -1,98 +1,101 @@
-English | [中文](README_ZH.md)
+# InkSight（Waveshare 4.2 精简固件说明版）
 
-# InkSight
+## 官方网址
+**www.inksight.site**
 
-> A calm e-ink desk companion with one website for flashing, configuration, preview, and discovering new modes.
+## 源码来源
+本仓库基于原项目修改而来：
+- 原项目：<https://github.com/datascale-ai/inksight>
+- 当前适配仓库：<https://github.com/xiaosheng123/inksight-WF>
 
-Official website: [https://www.inksight.site](https://www.inksight.site)
+本 README 主要说明当前仓库中 **Waveshare 4.2 寸屏幕精简固件** 的使用方式与现状。
 
-![InkSight](images/intro_eng.jpg)
+## 目标屏幕型号（务必确认）
 
-## Why It Stands Out
+当前适配工作默认针对这块墨水屏：
 
-InkSight turns a small e-ink screen into a quiet, always-visible information surface for your desk.
-Instead of another glowing notification feed, it gives you useful, beautiful, and customizable content in a paper-like form.
+- **WFT0420CZ15LW** —— 微雪 4.2" 三色 e-Paper，分辨率 400×300  
+  - 官方资料通常以名称 **“4.2inch e-Paper (B) V2”** 出现在 PDF 中：  
+    `4.2inch_e-Paper_(B)_V2.pdf`  
+  - 本仓库后续提到的 “4.2 屏 / Waveshare 4.2 三色” 如无特别说明，均指 **WFT0420CZ15LW 这一 WF 开头型号**。
 
-- **Useful at a glance** — weather, countdowns, memos, habits, briefings, and daily prompts
-- **Made for desks** — a paper-like e-ink display that stays visible without adding screen fatigue
-- **Beautiful and varied** — 24 built-in modes, from practical dashboards to more atmospheric content
-- **A one-stop website experience** — beginner-friendly browser flashing, online setup, preview, and mode discovery
-- **Open and extensible** — firmware, backend, web configuration, and the JSON mode system are all designed to be expanded over time, including future hardware design files
+如果你手上的屏不是这一型号（例如 4in2G、4.2" 纯黑白等），请谨慎直接使用本仓库固件。
 
-## One Website, End to End
+## 当前结论
+当前这份适配工作的主要结论如下：
 
-The website brings the whole user flow together in one place.
-Even if you are completely new to e-paper devices, ESP32 boards, or WebSerial, the product is designed so you can get started by following the UI step by step instead of assembling your own toolchain first.
+- 已切换到 **Waveshare 4.2 驱动后端**
+- 默认构建已去掉大部分旧的 **GxEPD2 / U8g2** 依赖
+- 目前仅维护 **ESP32-C3 + WFT0420CZ15LW** 这一条 4.2 寸固件线
+- 固件体积已明显瘦身，适合先做真机联调
+- 当前重点是先保证 **黑白稳定显示**
+- 三色显示与 WROOM32E 支持仍在联调中，暂未提供可用 Release 固件
 
-- **Flash firmware in the browser** with the Web Flasher, without starting from a local flashing setup
-- **Configure devices online** with modes, preferences, refresh strategy, and per-mode overrides
-- **Preview content before saving** so the final e-ink result is visible in advance
-- **Try it even without a device** through the no-device demo flow
-- **Discover community creations** in the mode plaza, then install and reuse ideas shared by other users
+## 固件发布目录
+仓库内已提交的固件位于：
 
-This makes InkSight feel less like a kit with scattered tools and more like a complete product experience.
+- `firmware/releases/`
 
-## Rich Mode Library
+### ESP32-C3（WFT0420CZ15LW 4.2"）
 
-InkSight currently ships with **24 built-in modes**, including:
+新命名（推荐使用）：
 
-- **Daily Picks** — quotes, books, facts, and seasonal context
-- **Weather Dashboard** — live weather with practical advice
-- **Poetry / Zen / Stoic** — calm, reflective content for focused desks
-- **AI Briefing** — technology highlights and AI insights
-- **ArtWall** — black-and-white AI artwork tailored to context
-- **Memo / Countdown / Habit / Fitness** — practical everyday desk utilities
+- `firmware/releases/WFT0420CZ15LW_esp32c3_inksight.bin`
+- `firmware/releases/WFT0420CZ15LW_esp32c3_inksight_merged.bin`
 
-You can also:
+旧命名（兼容保留）：
 
-- **create custom modes**
-- **save them to your device**
-- **share them to the mode plaza**
-- **install community-created modes**
+- `firmware/releases/waveshare_c3_4in2.bin`
+- `firmware/releases/waveshare_c3_4in2_merged.bin`
 
-## Recommended Hardware
+> 说明：原先的 WROOM32E 对应固件（包括 `waveshare_wroom32e_4in2*.bin` 和 `WFT0420CZ15LW_wroom32e_tb_board*.bin`）
+> 因实际测试存在“无法正常开机”的问题，已从仓库移除，待后续调试稳定后再重新发布。
 
-InkSight is easiest to build with the following setup:
+## 推荐烧录文件
+推荐优先使用带 `*_merged.bin` 后缀的固件：
 
-| Part | Recommended choice |
-|------|--------------------|
-| MCU | ESP32-C3 development board |
-| Display | 4.2-inch SPI e-paper display |
-| Power | USB for development, optional lithium battery build (recommended `505060-2000mAh` + TP5000) |
-| Cost | Typical DIY BOM around **CNY 220** |
+- `WFT0420CZ15LW_esp32c3_inksight_merged.bin`
 
 > **For detailed purchasing schemes and part links**, please refer to the [**Hardware Purchasing Guide**](docs/en/bom.md) (Note: links are mostly for Taobao, but equivalent parts can be found on AliExpress/Amazon).
 
 The public documentation and setup flow are centered on **ESP32-C3 + 4.2-inch e-paper**.
 
-For a first build, start with **ESP32-C3 + 4.2-inch e-paper**.
+- 已合并 bootloader / partitions / app
+- 直接从 `0x0` 烧录即可
+- 不容易因为偏移地址写错而翻车
 
-## Explore the Official Website
+## 平台说明
 
-![Official Website](images/official_web_screenshot_eng.png)
+### ESP32-C3
+适用于当前已验证的 C3 接线方案，对应 WFT0420CZ15LW 屏幕。
 
-If you want to get a feel for the product before buying parts or setting up anything locally, the official website is the best place to start:
+已知使用过的 4.2 寸屏幕接线为：
 
-- **Homepage** — a quick overview of the product and how the experience fits together
-- **Web flasher** — browser-based firmware flashing, with a walkthrough video here: [`Flashing tutorial`](https://www.bilibili.com/video/BV1aWcQzQE3r/?spm_id_from=333.1387.homepage.video_card.click&vd_source=166ea338ef8c38d7904da906b88ef0b7)
-- **Device configuration** — once a device is flashed, this is where you configure what it shows
-- **Mode plaza** — browse community-made creations, publish your own, or install modes shared by other users
-- **No-device demo** — try the experience even if you do not own the hardware yet
+- SCK = GPIO4
+- MOSI = GPIO6
+- CS = GPIO7
+- DC = GPIO1
+- RST = GPIO2
+- BUSY = GPIO10
 
-## Build the Device
+### ESP32-WROOM32E（暂不提供固件）
 
-If you enjoy DIY hardware and want to build your own InkSight unit, or if you already have the parts but are not sure how to wire and assemble them, start here:
+WROOM32E 这条线当前仍在联调中：
 
-![Build the Device](images/build-device.png)
+- 早期固件在实机上存在“无法正常开机”的问题
+- 为避免误导下载和刷写，相关固件已从 `firmware/releases/` 中移除
+- 后续若确认稳定，将重新发布，并在 README 中补充说明
 
-You can also follow the step-by-step assembly video here: [`Assembly tutorial`](https://www.bilibili.com/video/BV1spwKzUE6N?spm_id_from=333.788.videopod.sections&vd_source=166ea338ef8c38d7904da906b88ef0b7)
+## 当前构建状态
 
-We also provide the matching docs:
+### 已完成
+- `wft_4in2b`（ESP32-C3, WFT0420CZ15LW）编译通过
+- 默认构建已瘦身成功
+- 已将 C3 固件提交到 `firmware/releases/`
 
-- Hardware guide: [`docs/hardware.md`](docs/hardware.md)
-- Assembly guide: [`docs/assembly.md`](docs/assembly.md)
-- Flashing guide: [`docs/flash.md`](docs/flash.md)
-- Configuration guide: [`docs/config.md`](docs/config.md)
+### 联调中
+- C3 三色显示路径（基于 WFT0420CZ15LW 的红色通道）
+- ESP32-WROOM32E + WFT0420CZ15LW 固件（启动与引脚映射）
 
 ## Community Showcase
 
@@ -123,18 +126,32 @@ We are thrilled to see the amazing cases and custom PCBs created by the InkSight
 
 ## Self-Host or Develop
 
-If you are a developer, want to run your own local deployment, or want to go beyond the hosted website and build custom integrations or workflows, start here:
+## 编译环境
+当前仓库在本地使用过的可用 PlatformIO 隔离环境为：
 
-- Deployment guide: [`docs/en/deploy.md`](docs/en/deploy.md)
-- 中文部署文档：[`docs/deploy.md`](docs/deploy.md)
-- Architecture: [`docs/en/architecture.md`](docs/en/architecture.md)
-- API: [`docs/en/api.md`](docs/en/api.md)
-- Plugin / extension development: [`docs/en/plugin-dev.md`](docs/en/plugin-dev.md)
+- `.venv-pio`
 
-## Community
+例如：
 
-- Discord: [https://discord.gg/5Ne6D4YNf](https://discord.gg/5Ne6D4YNf)
-- QQ 群: [1026120682](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=kha7gD4FzS3ld_f9bx_TlLIj94Oyoip1&authKey=n4yACMiVaMagSs5HUH5HLw%2BhXdKRFjCDI4rAt7zdVym7yTeXwMxTkWqUjE9jzjXo&noverify=0&group_code=1026120682)
-- BiliBili: [https://www.bilibili.com/video/BV1nSNcziE7q/](https://www.bilibili.com/video/BV1nSNcziE7q/)
+```bash
+/root/.openclaw/workspace/.venv-pio/bin/pio run -e wft_4in2b
+```
 
-![QQ Group QR Code](images/QQ_EN.jpg)
+## 烧录建议
+如果使用 merged 固件，通常可直接从 `0x0` 烧录。
+
+请根据自己的芯片与串口环境，选择对应烧录方式，例如：
+
+```bash
+esptool.py --chip esp32c3 --port <PORT> --baud 460800 \ 
+  write_flash 0x0 firmware/releases/WFT0420CZ15LW_esp32c3_inksight_merged.bin
+```
+
+## 说明
+这份 README 现在重点服务于：
+
+- 固件产物位置说明
+- 当前仅维护的 C3 + WFT0420CZ15LW 4.2 寸固件状态
+- 后续三色显示与 WROOM32E 固件将另行说明
+
+如果后续把旧日历渲染完整迁回新链路，再继续补充更完整的功能说明。

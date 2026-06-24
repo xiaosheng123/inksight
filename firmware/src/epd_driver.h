@@ -14,6 +14,8 @@ void epdInitFast();
 
 // Full-screen display with full refresh (clears ghosting, has black-white flash)
 void epdDisplay(const uint8_t *image);
+void epdDisplayDual(const uint8_t *blackImage, const uint8_t *colorImage);
+void epdDisplayDualCombo(const uint8_t *blackImage, const uint8_t *colorImage);
 
 // Deep clear: multi-cycle black/white flush then display image (eliminates stubborn ghosting)
 void epdDisplayDeepClear(const uint8_t *image);
@@ -32,5 +34,36 @@ void epdPartialDisplay(uint8_t *data, int xStart, int yStart, int xEnd, int yEnd
 
 // Put EPD into deep sleep mode
 void epdSleep();
+
+// ==================== 威锋4in2b函数声明 ====================
+/**
+ * @brief 威锋4in2b初始化
+ * WFT0420CZ15LW 专用初始化函数
+ */
+void epd_wft_4in2b_init();
+
+/**
+ * @brief 威锋4in2b清屏
+ * @param color 颜色: 0=黑, 1=白, 2=红
+ */
+void epd_wft_4in2b_clear(uint8_t color);
+
+/**
+ * @brief 威锋4in2b显示图像
+ * @param image 图像数据指针
+ * @param len 图像数据长度
+ */
+void epd_wft_4in2b_display(const uint8_t* image, size_t len);
+
+/**
+ * @brief 威锋4in2b进入睡眠模式
+ */
+void epd_wft_4in2b_sleep();
+
+// Diagnostic hook for 3-color dual-plane tests
+void epd_wft_4in2b_dual_plane_test(const uint8_t* black, const uint8_t* color);
+void epd_wft_4in2b_ram_channel_test(const uint8_t* plane10, const uint8_t* plane13);
+void epd_wft_4in2b_native_test(const uint8_t* data1, const uint8_t* data2);
+void epd_wft_4in2b_old_compat_test(const uint8_t* black, const uint8_t* color, bool doClear);
 
 #endif // INKSIGHT_EPD_DRIVER_H

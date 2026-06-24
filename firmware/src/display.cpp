@@ -172,30 +172,31 @@ static void fillRect(int x, int y, int w, int h) {
 void showSetupScreen(const char *apName) {
     memset(imgBuf, 0xFF, IMG_BUF_LEN);
 
-    fillRect(0, 0, W, H * 12 / 100);
-    fillRect(W * 8 / 100, H * 28 / 100, W * 84 / 100, H * 2 / 100);
-    fillRect(W * 8 / 100, H * 72 / 100, W * 84 / 100, H * 2 / 100);
+    int titleScale = 3;
+    int bodyScale  = 2;
 
-    const char *title = "SETUP WIFI";
-    int titleScale = (H < 200) ? 2 : 4;
+    const char *title = "Setup WiFi";
+    const char *line1 = "Connect phone to";
+    const char *line3 = "Open browser";
+
+    int titleY = 36;
+    int line1Y = 110;
+    int apY    = 155;
+    int line3Y = 220;
+
     int titleX = (W - textWidth(strlen(title), titleScale)) / 2;
-    int titleY = H * 15 / 100;
-    drawText(title, titleX, titleY, titleScale);
-
-    const char *line1 = "CONNECT TO";
-    int bodyScale = (H < 200) ? 1 : 2;
     int line1X = (W - textWidth(strlen(line1), bodyScale)) / 2;
-    int line1Y = H * 36 / 100;
-    drawText(line1, line1X, line1Y, bodyScale);
-
-    int apScale = (H < 200) ? 2 : 3;
-    int apX = (W - textWidth(strlen(apName), apScale)) / 2;
-    int apY = H * 46 / 100;
-    drawText(apName, apX, apY, apScale);
-
-    const char *line3 = "OPEN BROWSER";
+    int apX    = (W - textWidth(strlen(apName), titleScale)) / 2;
     int line3X = (W - textWidth(strlen(line3), bodyScale)) / 2;
-    int line3Y = H * 62 / 100;
+
+    if (titleX < 4) titleX = 4;
+    if (line1X < 4) line1X = 4;
+    if (apX < 4) apX = 4;
+    if (line3X < 4) line3X = 4;
+
+    drawText(title, titleX, titleY, titleScale);
+    drawText(line1, line1X, line1Y, bodyScale);
+    drawText(apName, apX, apY, titleScale);
     drawText(line3, line3X, line3Y, bodyScale);
 
     epdDisplay(imgBuf);

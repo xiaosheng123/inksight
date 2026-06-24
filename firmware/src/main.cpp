@@ -129,12 +129,33 @@ static bool waitForContentReady();
 static void handleFailure(const char *reason);
 static void enterDeepSleep(int minutes);
 static void enterPortalMode();
+static void ledFeedback(const char *pattern);
 
 // ── LED feedback ────────────────────────────────────────────
 
 static void ledInit() {
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
+}
+
+static void enterPortalMode() {
+    String mac = WiFi.macAddress();
+    String apName = "InkSight-" + mac.substring(mac.length() - 5);
+    apName.replace(":", "");
+
+    ctx.liveMode = false;
+    ctx.wantEnterLiveMode = false;
+    ctx.wantRefresh = false;
+    ctx.btnPressStart = 0;
+
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+
+    ledFeedback("portal");
+    showSetupScreen(apName.c_str());
+    startCaptivePortal();
+    ctx.state = DeviceState::PORTAL;
+    ctx.ignoreConfigButtonUntilRelease = (digitalRead(PIN_CFG_BTN) == LOW);
 }
 
 static void ledFeedback(const char *pattern) {
@@ -693,7 +714,6 @@ void setup() {
     if (forcePortal || !hasConfig) {
         Serial.println(forcePortal ? "Config button held -> portal"
                                    : "No WiFi config -> portal");
-        delay(5000);
         enterPortalMode();
         return;
     }
@@ -745,6 +765,8 @@ void setup() {
 #endif
 
     Serial.println("Fetching image...");
+    // jcalendar render pass
+    si_screen();
     ledFeedback("downloading");
     bool gotFallback = false;
     String renderedModeId;

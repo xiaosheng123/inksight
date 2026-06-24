@@ -169,7 +169,9 @@ void startCaptivePortal() {
     // ── Route: WiFi connection status ──────────────────────────
     webServer.on("/status", HTTP_GET, []() {
         String json = "{\"state\":\"";
-        if (WiFi.status() == WL_CONNECTED) {
+        if (pendingRestart) {
+            json += "saved\"";
+        } else if (WiFi.status() == WL_CONNECTED) {
             json += "connected\",\"ip\":\"" + WiFi.localIP().toString() + "\"";
         } else if (wifiConnecting) {
             json += "connecting\"";
@@ -183,13 +185,13 @@ void startCaptivePortal() {
         webServer.send(200, "application/json", json);
     });
 
-    // ── Route: Save WiFi credentials (async with polling) ────
+    // ── Route: Save WiFi credentials (save-first, reboot-later) ────
     webServer.on("/save_wifi", HTTP_POST, []() {
         String ssid = sanitizeSSID(webServer.arg("ssid"));
         String pass = sanitizeTextInput(webServer.arg("pass"), PORTAL_MAX_PASS);
         String serverUrl = sanitizeInput(webServer.arg("server"), PORTAL_MAX_URL);
 
-        Serial.printf("\n--- /save_wifi Request ---\n");
+        Serial.println("\n--- /save_wifi Request ---");
         Serial.printf("SSID: %s\n", ssid.c_str());
         Serial.printf("Server: %s\n", serverUrl.c_str());
 
@@ -205,7 +207,6 @@ void startCaptivePortal() {
                                "{\"ok\":false,\"msg\":\"服务器地址必须以 http:// 或 https:// 开头\"}");
                 return;
             }
-            // Remove trailing slash
             while (serverUrl.endsWith("/")) {
                 serverUrl = serverUrl.substring(0, serverUrl.length() - 1);
             }
@@ -213,58 +214,23 @@ void startCaptivePortal() {
             Serial.printf("Server URL saved: %s\n", serverUrl.c_str());
         }
 
-        Serial.printf("Portal: connecting to %s\n", ssid.c_str());
-        wifiConnecting = true;
-        lastWifiError  = "";
-
-        WiFi.mode(WIFI_AP_STA);
-        WiFi.begin(ssid.c_str(), pass.c_str());
-
-        unsigned long t0 = millis();
-        while (WiFi.status() != WL_CONNECTED && millis() - t0 < (unsigned long)WIFI_TIMEOUT) {
-            delay(300);
-            Serial.print(".");
-        }
-        Serial.println();
-
+        saveWiFiConfig(ssid, pass);
         wifiConnecting = false;
+        wifiConnected = false;
+        lastWifiError = "";
 
-        if (WiFi.status() == WL_CONNECTED) {
-            saveWiFiConfig(ssid, pass);
-            wifiConnected = true;
-            lastWifiError = "";
-            Serial.printf("WiFi OK  IP=%s\n", WiFi.localIP().toString().c_str());
-            String pairCode = generatePairCode();
-            savePendingPairCode(pairCode);
-            Serial.printf("[PAIR] local pair code: %s\n", pairCode.c_str());
-            String response = String("{\"ok\":true,\"pair_code\":\"") + pairCode + "\"}";
-            Serial.printf("Sending response: %s\n", response.c_str());
-            webServer.send(200, "application/json", response);
+        String pairCode = generatePairCode();
+        savePendingPairCode(pairCode);
+        Serial.printf("[PAIR] local pair code saved: %s\n", pairCode.c_str());
 
-            pendingRestart  = true;
-            restartAtMillis = millis() + 15000;
-            Serial.println("Restart scheduled in 15s (or earlier via /restart)");
-        } else {
-            uint8_t reason = WiFi.status();
-            Serial.printf("WiFi connection failed, status code: %d\n", reason);
-            if (reason == WL_NO_SSID_AVAIL) {
-                lastWifiError = "NO_SSID";
-            } else if (reason == WL_CONNECT_FAILED) {
-                lastWifiError = "AUTH_FAIL";
-            } else {
-                lastWifiError = "TIMEOUT";
-            }
-            WiFi.disconnect();
-            WiFi.mode(WIFI_AP_STA);
-            String msg;
-            if (lastWifiError == "NO_SSID")    msg = "找不到该网络";
-            else if (lastWifiError == "AUTH_FAIL") msg = "密码错误";
-            else                                   msg = "连接超时，请重试";
-            
-            Serial.printf("Sending error response: %s\n", msg.c_str());
-            webServer.send(200, "application/json",
-                           "{\"ok\":false,\"msg\":\"" + msg + "\"}");
-        }
+        pendingRestart = true;
+        restartAtMillis = millis() + 12000;
+        Serial.println("WiFi config saved; restart scheduled in 12s");
+
+        String response = String("{\"ok\":true,\"saved\":true,\"pair_code\":\"") +
+                          pairCode +
+                          "\",\"msg\":\"已保存配置，设备即将重启并尝试联网\"}";
+        webServer.send(200, "application/json", response);
     });
 
     // ── Route: Save user config ─────────────────────────────

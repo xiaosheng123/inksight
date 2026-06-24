@@ -26,12 +26,13 @@
 #define PIN_LED        5
 #define PIN_AI_CHAT_SW -1
 #elif defined(BOARD_PROFILE_ESP32_WROOM32E)
-#define PIN_EPD_MOSI   14
-#define PIN_EPD_SCK    13
-#define PIN_EPD_CS     15
-#define PIN_EPD_DC     27
-#define PIN_EPD_RST    26
-#define PIN_EPD_BUSY   25
+// Align WROOM32E EPD pins to the official driver board mapping from Taobao
+#define PIN_EPD_MOSI   12
+#define PIN_EPD_SCK    15
+#define PIN_EPD_CS     16
+#define PIN_EPD_DC     11
+#define PIN_EPD_RST    10
+#define PIN_EPD_BUSY   9
 #define PIN_BAT_ADC    35
 #define PIN_CFG_BTN    0
 #define PIN_LED        2
@@ -67,10 +68,10 @@
 #endif
 
 // ── Display constants ────────────────────────────────────────
-// Default for 4.2" E-Paper (400x300, 1-bit).
+// Default for WFT0420CZ15LW (4.2", 400x300, 3-color)
 // Override via build flags: -D EPD_WIDTH=800 -D EPD_HEIGHT=480
 // Supported configurations:
-//   4.2"  (400x300) - default
+//   4.2"  (400x300) - WFT0420CZ15LW (UC8176/IL0398 compatible)
 //   2.9"  (296x128)
 //   5.83" (648x480)
 //   7.5"  (800x480)
@@ -80,6 +81,9 @@
 #ifndef EPD_HEIGHT
 #define EPD_HEIGHT 300
 #endif
+
+// ── 威锋WFT0420CZ15LW驱动IC配置 ───────────────────────────────
+#define WAVESHARE_IL0398_4IN2B
 
 static const int W = EPD_WIDTH;
 static const int H = EPD_HEIGHT;

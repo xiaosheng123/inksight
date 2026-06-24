@@ -1,5 +1,9 @@
 #include "epd_driver.h"
 #include "config.h"
+#include "DEV_Config.h"
+#include "GUI_Paint.h"
+#include <stdlib.h>
+#include <string.h>
 
 #if defined(EPD_PANEL_42_SSD1683_BW) || defined(EPD_PANEL_42_DKE_RY683) || defined(EPD_PANEL_42_GDEM042F52)
 
@@ -826,8 +830,7 @@ static const uint8_t DISPLAY_ROTATION =
 #endif
 
 void gpioInit() {
-    pinMode(PIN_CFG_BTN, INPUT_PULLUP);
-    SPI.begin(PIN_EPD_SCK, -1, PIN_EPD_MOSI, PIN_EPD_CS);
+  DEV_Module_Init();
 }
 
 void epdInit() {
@@ -840,7 +843,7 @@ void epdInit() {
 }
 
 void epdInitFast() {
-    epdInit();
+  initPanel(EpdMode::Fast, false);
 }
 
 void epdDisplay(const uint8_t *image) {
