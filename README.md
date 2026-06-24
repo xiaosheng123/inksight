@@ -155,3 +155,63 @@ esptool.py --chip esp32c3 --port <PORT> --baud 460800 \
 - 后续三色显示与 WROOM32E 固件将另行说明
 
 如果后续把旧日历渲染完整迁回新链路，再继续补充更完整的功能说明。
+
+---
+
+# InkSight 7.5" BWR 三色墨水屏支持
+
+## 目标屏幕型号
+
+- **GDEY075Z08** —— Good Display 7.5" 三色 (BWR) e-Paper，分辨率 640×384
+  - 控制器：IL0371
+  - 驱动库：GxEPD2 (GxEPD2_750c + GxEPD2_3C)
+  - 颜色：黑、白、红
+
+## 编译环境
+
+```bash
+# 7.5" BWR 三色 (ESP32-C3)
+platformio run -e epd_75_bwr_640x384_c3_promini
+
+# 7.5" 黑白 (ESP32-C3)
+platformio run -e epd_75_640x384_c3_promini
+```
+
+## 关键技术说明
+
+### 颜色映射
+- 后端 palette：0=黑, 1=白, 2=黄, 3=红
+- 设备请求 `colors=3`（BWR 三色，无黄色）
+- 固件将 2bpp 数据转为 IL0371 原生 4bpp 格式逐行写入
+
+### 已知问题与解决方案
+1. **GxEPD2 writeImage 双 buffer 不生效**：使用 `writeNative` 逐行写入原生 4bpp 数据绕过
+2. **powerOff 后 _initialized 未重置**：每次 `powerOff()` 后手动设 `_initialized = false`
+3. **122KB 原生缓冲区内存不足**：改为逐行处理（每行 320 字节）
+
+### 配网页面三色验证
+配网页面会先用 `epdDisplay()` 显示黑白内容，再用 `epdDisplayRed()` 叠加红色通道。如果能看到红色文字，说明三色驱动正常。
+
+## 后端配置
+
+- 屏幕尺寸选择：7.5" 640×384
+- 所有 53 个 mode JSON 文件已添加 640×384 layout_overrides
+- 短屏提示词：640×384 会被识别为"宽但矮"的屏幕，LLM 会生成更简洁的内容
+
+## 烧录
+
+```bash
+esptool.py --chip esp32c3 --port <PORT> --baud 460800 \
+  write_flash 0x0 firmware/.pio/build/epd_75_bwr_640x384_c3_promini/firmware_merged.bin
+```
+
+## 接线 (ESP32-C3)
+
+| 引脚 | GPIO |
+|------|------|
+| SCK  | 4    |
+| MOSI | 6    |
+| CS   | 7    |
+| DC   | 1    |
+| RST  | 2    |
+| BUSY | 10   |
