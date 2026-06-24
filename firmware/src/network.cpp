@@ -572,7 +572,7 @@ bool fetchBMP(bool nextMode, bool *isFallback, String *renderedModeIdOut) {
     int effectiveRefreshMin = cfgSleepMin;
 #endif
 #if EPD_BPP >= 2
-    const int colorCapability = 4;
+    const int colorCapability = 3;  // BWR: black, white, red (no yellow)
 #else
     const int colorCapability = 2;
 #endif

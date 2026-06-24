@@ -688,11 +688,6 @@ void setup() {
         forcePortal = (digitalRead(PIN_CFG_BTN) == LOW);
     }
 
-    cacheInit();
-    Serial.println("EPD ready");
-
-    loadConfig();
-
     bool hasConfig = (cfgSSID.length() > 0);
 
     if (forcePortal || !hasConfig) {
@@ -700,13 +695,6 @@ void setup() {
                                    : "No WiFi config -> portal");
         delay(5000);
         enterPortalMode();
-        String mac = WiFi.macAddress();
-        String apName = "InkSight-" + mac.substring(mac.length() - 5);
-        apName.replace(":", "");
-        ledFeedback("portal");
-        showSetupScreen(apName.c_str());
-        startCaptivePortal();
-        ctx.state = DeviceState::PORTAL;
         return;
     }
 
@@ -1017,7 +1005,7 @@ void loop() {
                 memcpy(alertBackupBuf, imgBuf, IMG_BUF_LEN);
                 hasAlertBackup = true;
                 if (fetchFocusAlertBMP()) {
-                    epdDisplayFast(imgBuf);
+                    displayWithWhiteClear(imgBuf);
                     alertVisible = true;
                     alertShownAt = nowMs;
                 } else {
@@ -1030,7 +1018,7 @@ void loop() {
             if (nowMs - alertShownAt >= ALERT_DISPLAY_MS) {
                 if (hasAlertBackup) {
                     memcpy(imgBuf, alertBackupBuf, IMG_BUF_LEN);
-                    epdDisplayFast(imgBuf);
+                    displayWithWhiteClear(imgBuf);
                 }
                 hasAlertBackup = false;
                 alertVisible = false;

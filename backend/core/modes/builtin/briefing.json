@@ -197,6 +197,23 @@
         "gap": 12
       }
     },
+"640x384": {
+        "component_theme": {
+            "body_font_size": 9,
+            "body_line_gap": 7,
+            "section_title_font_size": 9,
+            "section_icon_size": 16,
+            "section_icon_gap": 20,
+            "section_title_gap": 8,
+            "section_content_indent": 46,
+            "section_content_gap": 5
+        },
+        "preset_props": {
+            "padding_x": 24,
+            "padding_y": 5,
+            "gap": 8
+        }
+    },
     "800x480": {
       "component_theme": {
         "body_font_size": 16,

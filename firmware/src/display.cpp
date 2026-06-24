@@ -2,6 +2,23 @@
 #include "config.h"
 #include "epd_driver.h"
 
+// ── Ghosting-safe full refresh ───────────────────────────────
+// WFT0420CZ15 BW clears reliably with the same visible pattern as the setup
+// page: first drive a full white frame, then drive the target frame.  The target
+// may be imgBuf itself, so copy it before clearing imgBuf.
+static uint8_t ghostingTargetBuf[IMG_BUF_LEN];
+
+void displayWithWhiteClear(const uint8_t *image) {
+    // Save image first — callers pass imgBuf which we're about to clear
+    memcpy(ghostingTargetBuf, image, IMG_BUF_LEN);
+    // White frame
+    memset(imgBuf, 0xFF, IMG_BUF_LEN);
+    epdDisplay(imgBuf);
+    // Content frame
+    memcpy(imgBuf, ghostingTargetBuf, IMG_BUF_LEN);
+    epdDisplay(imgBuf);
+}
+
 // ── Unified 5x7 pixel font ─────────────────────────────────
 // Each glyph is 5 columns x 7 rows, stored column-major.
 // Bit 0 = top row, bit 6 = bottom row.
@@ -182,6 +199,9 @@ void showSetupScreen(const char *apName) {
     drawText(line3, line3X, line3Y, bodyScale);
 
     epdDisplay(imgBuf);
+#if defined(EPD_PANEL_75) && defined(EPD_BPP) && EPD_BPP >= 2
+    epdDisplayRed(imgBuf);  // overlay red channel for BWR
+#endif
     Serial.printf("Setup screen shown: %s\n", apName);
 }
 
@@ -347,7 +367,7 @@ void showAiChatStatus(const char *state, const char *detail) {
     int maxLines = computeMaxWrappedLines(bodyY, yEnd, bodyScale);
     drawWrappedAsciiText(body, marginX, bodyY, contentWidth, bodyScale, maxLines);
 
-    epdDisplayFast(imgBuf);
+    displayWithWhiteClear(imgBuf);
 }
 
 
@@ -430,7 +450,7 @@ void showVoiceIndicator(bool footerCenter) {
             widthBytes
         );
     }
-    epdPartialDisplay(voicePartialBuf, xStart, yStart, xEnd, yEnd);
+    displayWithWhiteClear(imgBuf);
     Serial.println("[VOICE] indicator shown");
 }
 
@@ -465,7 +485,7 @@ void hideVoiceIndicator() {
             widthBytes
         );
     }
-    epdPartialDisplay(voicePartialBuf, xStart, yStart, xEnd, yEnd);
+    displayWithWhiteClear(imgBuf);
     voiceIconX = -1;
     voiceIconY = -1;
     Serial.println("[VOICE] indicator hidden");
@@ -490,7 +510,7 @@ void showVoiceChatScreen() {
     int labelY = iy + iconDrawH + ((H < 200) ? 6 : 16);
     drawText(label, labelX, labelY, labelScale);
 
-    epdDisplayFast(imgBuf);
+    displayWithWhiteClear(imgBuf);
     Serial.println("[VOICE] chat screen shown");
 }
 
@@ -642,7 +662,7 @@ void updateTimeDisplay() {
     uint8_t partBuf[rgnW * rgnH];
     memset(partBuf, 0xFF, sizeof(partBuf));
     drawPeriodLabel(partBuf, rgnPixelW, rgnH, 0, 0, rgnPixelW, rgnH);
-    epdPartialDisplay(partBuf, TIME_RGN_X0, TIME_RGN_Y0, TIME_RGN_X1, TIME_RGN_Y1);
+    displayWithWhiteClear(imgBuf);
 }
 
 // ── Mode preview screen (double-click transition) ───────────
@@ -664,36 +684,26 @@ void showModePreview(const char *modeName) {
     int loadY = H / 2 + (H < 200 ? 10 : 20);
     drawText(loading, loadX, loadY, loadScale);
 
-    epdDisplayFast(imgBuf);
+    displayWithWhiteClear(imgBuf);
     Serial.printf("Mode preview shown: %s\n", modeName);
 }
 
-// ── Smart display with hybrid refresh strategy ──────────────
-// Uses fast refresh (0xC7 + temperature LUT, ~1.5s, minimal flash) most of the time.
-// Performs a full refresh (0xF7, clears ghosting) every FULL_REFRESH_INTERVAL cycles.
+// ── Smart display: white clear then content ──────────────────
+// This mirrors the setup screen's effective clear behavior on WFT0420CZ15 BW.
 
 static int refreshCount = 0;
 
 void smartDisplay(const uint8_t *image) {
 #if EPD_BPP >= 2
     if (useColorBuf && colorBuf) {
-        Serial.printf("smartDisplay: 2bpp color (cycle %d)\n", refreshCount);
+        Serial.printf("smartDisplay: 2bpp color full refresh (cycle %d)\n", refreshCount);
         epdDisplay2bpp(colorBuf);
         useColorBuf = false;
         refreshCount++;
         return;
     }
 #endif
-    if (refreshCount % FULL_REFRESH_INTERVAL == 0) {
-        Serial.printf("smartDisplay: full refresh (cycle %d)\n", refreshCount);
-        epdDisplay(image);
-    } else {
-#if defined(EPD_PANEL_42_GXEPD2_GYE042A87)
-        Serial.printf("smartDisplay: full refresh fallback (cycle %d)\n", refreshCount);
-#else
-        Serial.printf("smartDisplay: fast refresh (cycle %d)\n", refreshCount);
-#endif
-        epdDisplayFast(image);
-    }
+    Serial.printf("smartDisplay: white clear + content full refresh (cycle %d)\n", refreshCount);
+    displayWithWhiteClear(image);
     refreshCount++;
 }

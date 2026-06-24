@@ -541,6 +541,9 @@ void epdDisplayFast(const uint8_t *image) {
 
 // ── EPD partial refresh ─────────────────────────────────────
 
+
+
+
 void epdPartialDisplay(uint8_t *data, int xStart, int yStart, int xEnd, int yEnd) {
 #if defined(EPD_PANEL_42_DKE_RY683) || defined(EPD_PANEL_42_GDEM042F52)
     (void)data;
@@ -636,93 +639,83 @@ void epdInitFast() { epdInit(); }
 
 // ── BW full refresh ──
 
+// Shared previous frame tracking for UC8176 differential refresh (0x10 channel)
+static uint8_t previousFrame[IMG_BUF_LEN];
+static bool previousFrameValid = false;
+
 void epdDisplay(const uint8_t *image) {
     int w = EPD_WIDTH / 8;
+    int total = w * EPD_HEIGHT;
+
     epdInit();
 
+    // WFT/UC8176-style controllers use channel 0x10 as the previous/old
+    // image and channel 0x13 as the new image for differential refresh.  If we
+    // always write 0xFF to 0x10, the controller thinks the panel is blank even
+    // when old ink is still on the glass, which leaves visible ghosting.
     EPD_SendCommand(0x10);
     delay(2);
-    for (int i = 0; i < w * EPD_HEIGHT; i++) {
-        EPD_SendData(0xFF);
+    for (int i = 0; i < total; i++) {
+        EPD_SendData(previousFrameValid ? previousFrame[i] : 0xFF);
     }
 
     EPD_SendCommand(0x13);
     delay(2);
-    for (int i = 0; i < w * EPD_HEIGHT; i++) {
+    for (int i = 0; i < total; i++) {
         EPD_SendData(image[i]);
     }
 
     EPD_dispMass[EPD_dispIndex].show();
+    memcpy(previousFrame, image, total);
+    previousFrameValid = true;
 }
 
 // ── Deep clear (multi-cycle flush) ──
+// Drive the physical ink particles through black and white before showing the
+// target image. WFT0420CZ15 needs to see the REAL previous frame in 0x10 so
+// the UC8176 controller computes correct differential waveforms.
 
-void epdDisplayDeepClear(const uint8_t *image) {
-    epdDisplay(image);
-}
-
-// ── Tricolor display (2bpp packed data) ──
-
-void epdDisplay2bpp(const uint8_t *image2bpp) {
-#if EPD_BPP >= 2
+static void epdDisplaySolid(uint8_t value) {
     int w = EPD_WIDTH / 8;
     int total = w * EPD_HEIGHT;
+
     epdInit();
 
-    uint8_t *blackBuf = (uint8_t *)malloc(total);
-    uint8_t *redBuf = (uint8_t *)malloc(total);
-    if (!blackBuf || !redBuf) {
-        Serial.println("[EPD] 2bpp buffer alloc failed");
-        free(blackBuf);
-        free(redBuf);
-        return;
-    }
-    memset(blackBuf, 0xFF, total);
-    memset(redBuf, 0x00, total);
-
-    for (int y = 0; y < EPD_HEIGHT; y++) {
-        for (int x = 0; x < EPD_WIDTH; x++) {
-            int index = (y * EPD_WIDTH + x) / 4;
-            int bitOffset = ((y * EPD_WIDTH + x) % 4) * 2;
-            uint8_t color = (image2bpp[index] >> (6 - bitOffset)) & 0x03;
-            if (color == 0x02) color = 0x01; // map yellow to red
-
-            int bufIndex = y * w + (x / 8);
-            int bitPos = x % 8;
-
-            if (color == 0x00) { // Black
-                blackBuf[bufIndex] &= ~(0x80 >> bitPos);
-                redBuf[bufIndex] |= (0x80 >> bitPos);
-            } else if (color == 0x01) { // Red
-                redBuf[bufIndex] |= (0x80 >> bitPos);
-                blackBuf[bufIndex] |= (0x80 >> bitPos);
-            } else { // White (0x03)
-                blackBuf[bufIndex] |= (0x80 >> bitPos);
-                redBuf[bufIndex] &= ~(0x80 >> bitPos);
-            }
-        }
-    }
-
+    // 0x10 = old/previous frame — shared with epdDisplay
     EPD_SendCommand(0x10);
     delay(2);
     for (int i = 0; i < total; i++) {
-        EPD_SendData(blackBuf[i]);
+        EPD_SendData(previousFrameValid ? previousFrame[i] : 0xFF);
     }
 
+    // 0x13 = new frame
     EPD_SendCommand(0x13);
     delay(2);
     for (int i = 0; i < total; i++) {
-        EPD_SendData(redBuf[i]);
+        EPD_SendData(value);
     }
 
-    free(blackBuf);
-    free(redBuf);
-
     EPD_dispMass[EPD_dispIndex].show();
-#else
-    epdDisplay(image2bpp);
-#endif
+    // Update shared previous frame tracking
+    memset(previousFrame, value, total);
+    previousFrameValid = true;
 }
+
+void epdDisplayDeepClear(const uint8_t *image) {
+    Serial.println("[EPD-WFT] deep clear: black -> white -> content");
+    epdDisplaySolid(0x00);   // all black
+    delay(1000);
+    epdDisplaySolid(0xFF);   // all white
+    delay(1000);
+    epdDisplaySolid(0x00);   // all black again
+    delay(1000);
+    epdDisplaySolid(0xFF);   // all white again
+    delay(1000);
+    // epdDisplay will use the shared previousFrame (currently 0xFF/white)
+    epdDisplay(image);
+}
+
+// [Removed duplicate epdDisplay2bpp - now handled at line 445]
 
 // ── Fast refresh (same as full for WFT panel) ──
 
@@ -807,9 +800,16 @@ void epdSleep() {
   GxEPD2_BW<GxEPD2_583_GDEQ0583T31, GxEPD2_583_GDEQ0583T31::HEIGHT / 4> display(
       GxEPD2_583_GDEQ0583T31(PIN_EPD_CS, PIN_EPD_DC, PIN_EPD_RST, PIN_EPD_BUSY));
 #elif defined(EPD_PANEL_75)
-  #include <epd/GxEPD2_750_T7.h>
-  GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT / 4> display(
-      GxEPD2_750_T7(PIN_EPD_CS, PIN_EPD_DC, PIN_EPD_RST, PIN_EPD_BUSY));
+  #if defined(EPD_BPP) && EPD_BPP >= 2
+    #include <GxEPD2_3C.h>
+    #include <epd3c/GxEPD2_750c.h>
+    GxEPD2_3C<GxEPD2_750c, GxEPD2_750c::HEIGHT / 4> display(
+        GxEPD2_750c(PIN_EPD_CS, PIN_EPD_DC, PIN_EPD_RST, PIN_EPD_BUSY));
+  #else
+    #include <epd/GxEPD2_750_T7.h>
+    GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT / 4> display(
+        GxEPD2_750_T7(PIN_EPD_CS, PIN_EPD_DC, PIN_EPD_RST, PIN_EPD_BUSY));
+  #endif
 #else
   #error "No EPD panel type defined. Use -DEPD_PANEL_42_SSD1683_BW, -DEPD_PANEL_42_DKE_RY683, -DEPD_PANEL_42_GDEM042F52, -DEPD_PANEL_42_GXEPD2_T81, -DEPD_PANEL_42_GXEPD2_GYE042A87, -DEPD_PANEL_42_GXEPD2_420, -DEPD_PANEL_42_GXEPD2_M01, -DEPD_PANEL_29, -DEPD_PANEL_583_UC8179, -DEPD_PANEL_583, or -DEPD_PANEL_75"
 #endif
@@ -869,6 +869,7 @@ void epdDisplay(const uint8_t *image) {
 #endif
     display.refresh(false);
     display.powerOff();
+    _initialized = false;  // powerOff puts display to sleep; must re-init next time
 }
 
 void epdDisplayFast(const uint8_t *image) {
@@ -951,3 +952,52 @@ void epdSleep() {
 #endif
 }
 #endif // EPD_PANEL_42_SSD1683_BW
+
+// 7.5 BWR (3-color) epdDisplay2bpp implementation
+#if defined(EPD_PANEL_75) && defined(EPD_BPP) && EPD_BPP >= 2
+void epdDisplay2bpp(const uint8_t *image2bpp) {
+    epdInit();
+    // Write 2bpp data row-by-row using native 4bpp format
+    // Native: 0x00=black, 0x03=white, 0x04=red; 2 pixels per byte
+    int rowBytes = W / 2;  // 320 bytes per row
+    uint8_t *rowBuf = (uint8_t *)malloc(rowBytes);
+    if (!rowBuf) { Serial.println("[MEM] rowBuf alloc failed"); return; }
+    display.writeScreenBuffer(0x33);  // clear to white
+    for (int y = 0; y < H; y++) {
+        int out = 0;
+        for (int x = 0; x < W; x += 2) {
+            int idx1 = (y * W + x) / 4;
+            int shift1 = 6 - ((y * W + x) % 4) * 2;
+            uint8_t c1 = (image2bpp[idx1] >> shift1) & 0x03;
+            uint8_t n1 = (c1 == 0x00) ? 0x00 : (c1 == 0x03) ? 0x04 : 0x03;
+            int idx2 = (y * W + x + 1) / 4;
+            int shift2 = 6 - ((y * W + x + 1) % 4) * 2;
+            uint8_t c2 = (image2bpp[idx2] >> shift2) & 0x03;
+            uint8_t n2 = (c2 == 0x00) ? 0x00 : (c2 == 0x03) ? 0x04 : 0x03;
+            rowBuf[out++] = (n1 << 4) | n2;
+        }
+        display.writeNative(rowBuf, nullptr, 0, y, W, 1, false, false, false);
+    }
+    display.refresh(false);
+    display.powerOff();
+    _initialized = false;
+    free(rowBuf);
+}
+
+// Display 1-bit image with RED text on white background (for setup screen)
+void epdDisplayRed(const uint8_t *image) {
+    epdInit();
+    int bufSize = W * H / 8;
+    uint8_t *blackBuf = (uint8_t *)malloc(bufSize);
+    uint8_t *redBuf = (uint8_t *)malloc(bufSize);
+    if (!blackBuf || !redBuf) { if (blackBuf) free(blackBuf); if (redBuf) free(redBuf); return; }
+    memset(blackBuf, 0xFF, bufSize);  // all → after ~ → black_data=0 → not black
+    memcpy(redBuf, image, bufSize);   // text(0)→~0=1→RED, bg(1)→~1=0→WHITE
+    display.writeImage(blackBuf, redBuf, 0, 0, W, H, false, false, false);
+    display.refresh(false);
+    display.powerOff();
+    _initialized = false;
+    free(blackBuf);
+    free(redBuf);
+}
+#endif

@@ -110,6 +110,24 @@
         }
       ]
     },
+"640x384": {
+        "preset_props": {
+            "padding_x": 22,
+            "gap": 8,
+            "word_inset_x": 82,
+            "word_font_size": 62,
+            "source_font_size": 9
+        },
+        "decorations": [
+            {
+                "icon": "zen_img",
+                "anchor": "top_left",
+                "size": 64,
+                "margin": 10,
+                "image_mode": "circle"
+            }
+        ]
+    },
     "800x480": {
       "preset_props": {
         "padding_x": 28,

@@ -121,6 +121,27 @@
         "antidote_inset_x": 34
       }
     },
+"640x384": {
+        "preset_props": {
+            "padding_x": 14,
+            "padding_y": 6,
+            "gap": 5,
+            "title_font_size": 11,
+            "subtitle_font_size": 9,
+            "separator_width": 74,
+            "definition_font_size": 9,
+            "definition_max_lines": 2,
+            "example_font_size": 9,
+            "example_max_lines": 3,
+            "example_inset_x": 34,
+            "antidote_divider_margin_x": 40,
+            "antidote_label_font_size": 9,
+            "antidote_label_margin_x": 26,
+            "antidote_font_size": 9,
+            "antidote_max_lines": 2,
+            "antidote_inset_x": 34
+        }
+    },
     "800x480": {
       "preset_props": {
         "padding_x": 18,

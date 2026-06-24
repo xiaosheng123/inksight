@@ -83,7 +83,7 @@ class ConfigRequest(BaseModel):
     memoText: str = Field(default="", description="MEMO 模式下的备忘录文本")
     llmApiKey: str = Field(default="", max_length=200, description="LLM API Key (encrypted at rest)")
     imageApiKey: str = Field(default="", max_length=200, description="Image API Key (encrypted at rest)")
-    screenSize: str = Field(default="400x300", description="屏幕尺寸: 400x300 / 296x128 / 800x480")
+    screenSize: str = Field(default="400x300", description="屏幕尺寸: 400x300 / 296x128 / 640x384 / 800x480")
     modeOverrides: dict[str, dict] = Field(
         default_factory=dict,
         description="按模式覆盖配置，key 为 mode_id，value 可包含 city/llm_provider/llm_model 及其他模式设置项",

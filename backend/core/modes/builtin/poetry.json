@@ -161,6 +161,19 @@
         "note_font_size": 11
       }
     },
+"640x384": {
+        "preset_props": {
+            "top_gap": 16,
+            "gap": 5,
+            "title_font_size": 10,
+            "author_font_size": 9,
+            "separator_width": 72,
+            "lines_inset_x": 32,
+            "lines_font_size": 10,
+            "lines_gap": 8,
+            "note_font_size": 9
+        }
+    },
     "800x480": {
       "preset_props": {
         "top_gap": 22,

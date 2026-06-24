@@ -114,6 +114,27 @@
           "align_y": "center"
         }
       ]
+    },
+"640x384": {
+        "body_align": "top",
+        "body": [
+            {
+                "type": "text",
+                "field": "artwork_title",
+                "font_size": 10,
+                "align": "center",
+                "max_lines": 2
+            },
+            {
+                "type": "image",
+                "field": "image_url",
+                "width": 400,
+                "height": 214,
+                "fit": "cover",
+                "align_x": "center",
+                "align_y": "center"
+            }
+        ]
     }
   }
 }

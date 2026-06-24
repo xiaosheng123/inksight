@@ -118,6 +118,42 @@
         ]
       }
     },
+"640x384": {
+        "preset_props": {
+            "padding_x": 22,
+            "padding_y": 5,
+            "justify": "center",
+            "gap": 5,
+            "meta_field": "genre",
+            "meta_font_size": 9,
+            "title_field": "title",
+            "title_font": "noto_serif_bold",
+            "title_font_size": 10,
+            "title_max_lines": 2,
+            "separator_width": 58,
+            "sections": [
+                {
+                    "field": "opening",
+                    "font_size": 9,
+                    "inset_x": 30,
+                    "max_lines": 2
+                },
+                {
+                    "field": "twist",
+                    "font_size": 9,
+                    "inset_x": 30,
+                    "max_lines": 2
+                },
+                {
+                    "field": "ending",
+                    "font": "noto_serif_light",
+                    "font_size": 9,
+                    "inset_x": 30,
+                    "max_lines": 2
+                }
+            ]
+        }
+    },
     "800x480": {
       "preset_props": {
         "padding_x": 28,

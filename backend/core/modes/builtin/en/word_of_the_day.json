@@ -121,6 +121,18 @@
         "example_font_size": 15
       }
     },
+"640x384": {
+        "preset_props": {
+            "padding_x": 24,
+            "gap": 7,
+            "word_inset_x": 36,
+            "word_font_size": 35,
+            "phonetic_font_size": 9,
+            "separator_width": 44,
+            "definition_font_size": 11,
+            "example_font_size": 9
+        }
+    },
     "800x480": {
       "preset_props": {
         "padding_x": 28,

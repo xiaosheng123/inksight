@@ -206,6 +206,39 @@
         "tip_max_lines": 2,
         "divider_margin_x": 6
       }
+    },
+"640x384": {
+        "preset_props": {
+            "padding_x": 18,
+            "justify": "center",
+            "min_height": 230,
+            "row_gap": 12,
+            "panel_width": 145,
+            "panel_padding_x": 8,
+            "panel_gap": 5,
+            "year_font_size": 9,
+            "day_font_size": 35,
+            "month_font_size": 9,
+            "weekday_font_size": 9,
+            "progress_width": 92,
+            "season_font": "noto_serif_light",
+            "season_font_size": 9,
+            "season_inset_x": 10,
+            "content_padding_x": 6,
+            "quote_font": "noto_serif_regular",
+            "quote_font_size": 9,
+            "quote_max_lines": 2,
+            "author_template": "— {author}",
+            "author_font_size": 9,
+            "book_title_font_size": 9,
+            "book_title_max_lines": 2,
+            "book_author_template": "by {book_author}",
+            "book_author_font_size": 9,
+            "book_desc_font_size": 9,
+            "tip_font_size": 9,
+            "tip_max_lines": 2,
+            "divider_margin_x": 6
+        }
     }
   }
 }

@@ -240,6 +240,21 @@
         "tip_divider_margin_x": 40,
         "tip_font_size": 16
       }
+    },
+"640x384": {
+        "preset_props": {
+            "top_gap": 20,
+            "title_font_size": 12,
+            "duration_font_size": 10,
+            "header_divider_margin_x": 40,
+            "section_title_font_size": 10,
+            "section_content_indent": 40,
+            "exercise_gap": 8,
+            "exercise_font_size": 9,
+            "exercise_reps_font_size": 9,
+            "tip_divider_margin_x": 40,
+            "tip_font_size": 9
+        }
     }
   }
 }

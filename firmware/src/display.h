@@ -26,15 +26,19 @@ void showAiChatStatus(const char *state, const char *detail);
 void showVoiceIndicator(bool footerCenter = false);
 void hideVoiceIndicator();
 
-// Multi-turn: full-screen with large centered robot icon (uses fast full refresh).
+// Multi-turn: full-screen with large centered robot icon.
 void showVoiceChatScreen();
 
 int currentPeriodIndex();
 
 void updateTimeDisplay();
 
-// Smart display: uses no-flash partial refresh normally, full refresh every N cycles
+// Smart display: white-clears first, then shows content to reduce WFT ghosting.
 void smartDisplay(const uint8_t *image);
+
+// Full-frame display helper for callers outside display.cpp that need the same
+// anti-ghosting behavior.
+void displayWithWhiteClear(const uint8_t *image);
 
 // Show mode name preview screen (displayed briefly on double-click before loading)
 void showModePreview(const char *modeName);

@@ -1094,6 +1094,12 @@ function ConfigPageInner() {
       })
       .then((cfg: DeviceConfig) => {
         setConfig(cfg);
+        // Parse screenSize from config to set preview dimensions
+        const sz = (cfg as Record<string, unknown>).screenSize as string || (cfg as Record<string, unknown>).screen_size as string;
+        if (typeof sz === "string" && sz.includes("x")) {
+          const [sw, sh] = sz.split("x").map(Number);
+          if (sw > 0 && sh > 0) { setPreviewWidth(sw); setPreviewHeight(sh); }
+        }
         if (cfg.modes?.length) setSelectedModes(new Set(cfg.modes.map((m) => m.toUpperCase())));
         if (cfg.refreshStrategy || cfg.refresh_strategy) setStrategy((cfg.refreshStrategy || cfg.refresh_strategy) as string);
         if (cfg.refreshInterval || cfg.refresh_minutes) setRefreshMin((cfg.refreshInterval || cfg.refresh_minutes) as number);
@@ -1334,6 +1340,7 @@ function ConfigPageInner() {
         is_focus_listening: isFocusListening,
         always_active: alwaysActive,
         timeSlotRules: timeSlotRules,
+        screenSize: `${previewWidth}x${previewHeight}`,
       };
       const res = await fetch("/api/config", {
         method: "POST",
@@ -1398,6 +1405,7 @@ function ConfigPageInner() {
         is_focus_listening: isFocusListening,
         always_active: alwaysActive,
         timeSlotRules: timeSlotRules,
+        screenSize: `${previewWidth}x${previewHeight}`,
       };
       const res = await fetch("/api/config", {
         method: "POST",

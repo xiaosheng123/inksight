@@ -98,6 +98,14 @@
         "quote_max_lines": 4
       }
     },
+"640x384": {
+        "preset_props": {
+            "padding_x": 20,
+            "quote_inset_x": 28,
+            "quote_font_size": 12,
+            "quote_max_lines": 3
+        }
+    },
     "800x480": {
       "preset_props": {
         "padding_x": 28,

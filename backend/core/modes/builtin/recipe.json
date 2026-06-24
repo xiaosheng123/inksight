@@ -109,6 +109,17 @@
         "tip_font_size": 16,
         "tip_divider_margin_x": 48
       }
+    },
+"640x384": {
+        "preset_props": {
+            "gap": 6,
+            "season_font_size": 12,
+            "separator_width": 110,
+            "section_font_size": 10,
+            "meal_font_size": 9,
+            "tip_font_size": 9,
+            "tip_divider_margin_x": 48
+        }
     }
   }
 }

@@ -461,6 +461,144 @@
           }
         ]
       }
+    },
+"640x384": {
+        "component_theme": {
+            "body_font": "lora_regular",
+            "body_font_size": 9,
+            "body_line_gap": 6,
+            "section_title_font": "lora_bold",
+            "section_title_font_size": 10,
+            "section_title_gap": 4,
+            "section_content_indent": 40,
+            "section_content_gap": 5
+        },
+        "body": {
+            "type": "row",
+            "padding_x": 16,
+            "padding_y": 12,
+            "gap": 10,
+            "align": "center",
+            "children": [
+                {
+                    "type": "box",
+                    "width": 180,
+                    "children": [
+                        {
+                            "type": "column",
+                            "gap": 5,
+                            "children": [
+                                {
+                                    "type": "big_number",
+                                    "field": "day",
+                                    "font_size": 42,
+                                    "align": "center"
+                                },
+                                {
+                                    "type": "text",
+                                    "field": "month_cn",
+                                    "font_size": 11,
+                                    "align": "center",
+                                    "max_lines": 2
+                                },
+                                {
+                                    "type": "text",
+                                    "field": "weekday_cn",
+                                    "font_size": 9,
+                                    "align": "center",
+                                    "max_lines": 2
+                                },
+                                {
+                                    "type": "text",
+                                    "field": "solar_term",
+                                    "font": "lora_bold",
+                                    "font_size": 12,
+                                    "align": "center",
+                                    "max_lines": 2
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "box",
+                    "grow": 1,
+                    "padding_x": 12,
+                    "children": [
+                        {
+                            "type": "column",
+                            "gap": 5,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "template": "Lunar {lunar_date_display}",
+                                    "font_size": 9,
+                                    "font": "lora_bold",
+                                    "max_lines": 2
+                                },
+                                {
+                                    "type": "section_box",
+                                    "title": "Do",
+                                    "children": [
+                                        {
+                                            "type": "text",
+                                            "field": "yi",
+                                            "font": "lora_regular",
+                                            "font_size": 9,
+                                            "max_lines": 2
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "section_box",
+                                    "title": "Avoid",
+                                    "children": [
+                                        {
+                                            "type": "text",
+                                            "field": "ji",
+                                            "font": "lora_regular",
+                                            "font_size": 9,
+                                            "max_lines": 2
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "separator",
+                                    "style": "dashed"
+                                },
+                                {
+                                    "type": "section_box",
+                                    "title": "Positions",
+                                    "children": [
+                                        {
+                                            "type": "text",
+                                            "field": "shenwei",
+                                            "font": "lora_regular",
+                                            "font_size": 9,
+                                            "max_lines": 2
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "text",
+                                    "template": "Star Lodge {xingsu}",
+                                    "font": "lora_regular",
+                                    "font_size": 9,
+                                    "max_lines": 2
+                                },
+                                {
+                                    "type": "text",
+                                    "field": "health_tip",
+                                    "font": "lora_regular",
+                                    "font_size": 9,
+                                    "max_lines": 2
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
     }
   }
 }

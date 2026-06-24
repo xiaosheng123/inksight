@@ -53,6 +53,15 @@
         "footer_font_size": 13
       }
     },
+"640x384": {
+        "preset_props": {
+            "padding_x": 28,
+            "padding_y": 8,
+            "list_font_size": 9,
+            "list_max_lines": 7,
+            "footer_font_size": 9
+        }
+    },
     "800x480": {
       "preset_props": {
         "padding_x": 40,

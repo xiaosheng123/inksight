@@ -105,6 +105,34 @@
         }
       ]
     },
+"640x384": {
+        "body": [
+            {
+                "type": "centered_text",
+                "field": "title",
+                "font_name": "NotoSerifSC-Regular.ttf",
+                "font_size": 14,
+                "y": 132,
+                "max_width_ratio": 0.76
+            },
+            {
+                "type": "centered_text",
+                "field": "hint",
+                "font_name": "NotoSerifSC-Light.ttf",
+                "font_size": 9,
+                "y": 218,
+                "max_width_ratio": 0.82
+            },
+            {
+                "type": "centered_text",
+                "field": "tip",
+                "font_name": "NotoSerifSC-Light.ttf",
+                "font_size": 9,
+                "y": 276,
+                "max_width_ratio": 0.84
+            }
+        ]
+    },
     "800x480": {
       "body": [
         {

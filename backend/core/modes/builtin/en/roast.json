@@ -108,6 +108,32 @@
         ]
       }
     },
+"640x384": {
+        "component_theme": {
+            "body_font_size": 11
+        },
+        "body": {
+            "type": "column",
+            "padding_x": 20,
+            "justify": "center",
+            "children": [
+                {
+                    "type": "box",
+                    "padding_x": 28,
+                    "children": [
+                        {
+                            "type": "text",
+                            "field": "quote",
+                            "font": "noto_serif_bold",
+                            "font_size": 11,
+                            "align": "center",
+                            "max_lines": 4
+                        }
+                    ]
+                }
+            ]
+        }
+    },
     "800x480": {
       "component_theme": {
         "body_font_size": 26

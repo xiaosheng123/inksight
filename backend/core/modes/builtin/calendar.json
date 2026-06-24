@@ -142,6 +142,39 @@
           "max_lines": 1
         }
       ]
+    },
+"640x384": {
+        "body": [
+            {
+                "type": "calendar_grid",
+                "font_size": 10,
+                "header_font_size": 9,
+                "sub_font_size": 9,
+                "reminder_font": "noto_serif_light",
+                "reminder_font_size": 9,
+                "header_gap": 6,
+                "date_line_gap": 2,
+                "margin_x": 18,
+                "cell_height": 39,
+                "today_padding": 2
+            },
+            {
+                "type": "spacer",
+                "height": 12
+            },
+            {
+                "type": "separator",
+                "style": "dashed",
+                "margin_x": 16
+            },
+            {
+                "type": "text",
+                "field": "text",
+                "font_size": 9,
+                "align": "center",
+                "max_lines": 2
+            }
+        ]
     }
   }
 }

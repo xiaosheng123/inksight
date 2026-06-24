@@ -751,6 +751,18 @@ async def generate_json_mode_content(
             base_prompt += "\nNote: Content will be displayed on a tiny screen (296×128px). Keep all text very short."
         else:
             base_prompt += "\n注意：内容将显示在极小屏幕上（296×128像素），所有文字请尽量简短。"
+    elif screen_w >= 600:
+        if screen_h <= 400:
+            # 5:3 aspect ratio screens (e.g. 640×384) — wide but short, need concise content
+            if language == "en":
+                base_prompt += f"\nNote: Content will be displayed on a wide but short screen ({screen_w}×{screen_h}px, aspect ratio 5:3). Keep text concise — fewer lines than usual. Do NOT write long paragraphs."
+            else:
+                base_prompt += f"\n注意：内容将显示在宽而矮的屏幕上（{screen_w}×{screen_h}像素，5:3比例）。请精简内容，控制行数，不要写长段落。"
+        else:
+            if language == "en":
+                base_prompt += f"\nNote: Content will be displayed on a large screen ({screen_w}×{screen_h}px). You may use longer text and more detail."
+            else:
+                base_prompt += f"\n注意：内容将显示在大屏幕上（{screen_w}×{screen_h}像素），文字可以适当丰富一些。"
 
     mode_id = mode_def.get("mode_id", "CUSTOM")
     logger.info(f"[JSONContent] Generating content for {mode_id} via {provider}/{model}")

@@ -369,12 +369,9 @@ void EPD_showB()
     delay(100);
     EPD_WaitUntilIdle();
 
-    // Sleep
+    // Don't enter deep sleep — keep display awake for next refresh cycle
     EPD_Send_1(0x50, 0x17);// VCOM_AND_DATA_INTERVAL_SETTING
     EPD_Send_1(0x82, 0x00);// VCM_DC_SETTING_REGISTER, to solve Vcom drop
-    EPD_Send_4(0x01, 0x02, 0x00, 0x00, 0x00);// POWER_SETTING
-    EPD_WaitUntilIdle();
-    EPD_SendCommand(0x02);// POWER_OFF
 }
 
 /* Show image and turn to deep sleep mode (7.5 and 7.5b e-Paper) -------------*/

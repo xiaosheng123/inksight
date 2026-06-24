@@ -450,6 +450,125 @@
           "max_lines": 2
         }
       ]
+    },
+"640x384": {
+        "body_align": "top",
+        "body": [
+            {
+                "type": "text",
+                "field": "city",
+                "font": "lora_regular",
+                "font_size": 9,
+                "align": "left",
+                "margin_x": 16,
+                "max_lines": 2
+            },
+            {
+                "type": "spacer",
+                "height": 6
+            },
+            {
+                "type": "two_column",
+                "stack_when_short": false,
+                "left_valign": "center",
+                "left_width": 142,
+                "gap": 8,
+                "left_x": 16,
+                "left": [
+                    {
+                        "type": "big_number",
+                        "field": "today_temp",
+                        "font_size": 30,
+                        "align": "left",
+                        "margin_x": 0,
+                        "unit": "°C"
+                    },
+                    {
+                        "type": "spacer",
+                        "height": 4
+                    },
+                    {
+                        "type": "weather_icon_text",
+                        "code_field": "today_code",
+                        "field": "today_desc",
+                        "font": "lora_regular",
+                        "font_size": 9,
+                        "icon_size": 24,
+                        "icon_gap": 5,
+                        "align": "left",
+                        "margin_x": 0,
+                        "margin_bottom": 2
+                    },
+                    {
+                        "type": "text",
+                        "field": "today_range",
+                        "font": "lora_regular",
+                        "font_size": 9,
+                        "align": "left",
+                        "margin_x": 0,
+                        "max_lines": 2
+                    }
+                ],
+                "right": [
+                    {
+                        "type": "forecast_cards",
+                        "field": "forecast",
+                        "max_items": 4,
+                        "margin_x": 0,
+                        "gap": 3,
+                        "icon_size": 28
+                    }
+                ]
+            },
+            {
+                "type": "spacer",
+                "height": 6
+            },
+            {
+                "type": "icon_text",
+                "icon": "humidity",
+                "text": "Humidity {today_humidity}%   {today_wind_dir} {today_wind_level}",
+                "font": "lora_regular",
+                "font_size": 9,
+                "align": "left",
+                "margin_x": 16
+            },
+            {
+                "type": "spacer",
+                "height": 3
+            },
+            {
+                "type": "icon_text",
+                "icon": "sunrise",
+                "text": "Sunrise {sunrise} | Sunset {sunset}",
+                "font": "lora_regular",
+                "font_size": 9,
+                "align": "left",
+                "margin_x": 16
+            },
+            {
+                "type": "spacer",
+                "height": 7
+            },
+            {
+                "type": "separator",
+                "style": "solid",
+                "line_width": 1,
+                "margin_x": 16
+            },
+            {
+                "type": "spacer",
+                "height": 5
+            },
+            {
+                "type": "text",
+                "field": "advice",
+                "font": "lora_regular",
+                "font_size": 9,
+                "align": "center",
+                "max_lines": 2
+            }
+        ]
     }
   }
 }

@@ -79,6 +79,18 @@
         "definition_font_size": 20,
         "example_font_size": 14
       }
+    },
+"640x384": {
+        "preset_props": {
+            "padding_x": 22,
+            "gap": 6,
+            "word_inset_x": 32,
+            "word_font_size": 35,
+            "phonetic_font_size": 9,
+            "separator_width": 44,
+            "definition_font_size": 11,
+            "example_font_size": 9
+        }
     }
   }
 }

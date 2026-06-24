@@ -1261,6 +1261,25 @@ def render_json_mode(
     size_key = f"{screen_w}x{screen_h}"
     if size_key in overrides:
         layout = _merge_layout_dict(layout, overrides[size_key])
+    elif overrides:
+        # Fallback: find closest larger size, then closest smaller size
+        def _size_key_area(k):
+            try:
+                w, h = k.split("x")
+                return int(w) * int(h)
+            except (ValueError, AttributeError):
+                return 0
+        target_area = screen_w * screen_h
+        best = None
+        best_diff = float("inf")
+        for k in overrides:
+            a = _size_key_area(k)
+            diff = abs(a - target_area)
+            if diff < best_diff:
+                best_diff = diff
+                best = k
+        if best and best != size_key:
+            layout = _merge_layout_dict(layout, overrides[best])
     layout = expand_layout_presets(layout)
 
     sb = layout.get("status_bar", {})
@@ -1378,6 +1397,9 @@ def render_json_mode(
                 _render_block(ctx, block)
 
     _apply_decorations(img, layout.get("decorations", []), screen_w, screen_h, status_bar_bottom)
+
+    # Clip: clear any body content that overflowed into the footer area
+    draw.rectangle([0, footer_top, screen_w - 1, screen_h - 1], fill=EINK_BG)
 
     ft = ft_layout
     mode_id = mode_def.get("mode_id", "")

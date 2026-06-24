@@ -120,6 +120,25 @@
         }
       ]
     },
+"640x384": {
+        "preset_props": {
+            "padding_x": 54,
+            "padding_y": 10,
+            "title_font_size": 11,
+            "text_font_size": 10,
+            "text_max_lines": 6,
+            "text_inset_x": 0
+        },
+        "decorations": [
+            {
+                "icon": "memo_img",
+                "anchor": "top_left",
+                "size": 60,
+                "margin": 12,
+                "image_mode": "invert_dither"
+            }
+        ]
+    },
     "800x480": {
       "preset_props": {
         "padding_x": 80,

@@ -101,6 +101,20 @@
         "postscript_max_lines": 2
       }
     },
+"640x384": {
+        "preset_props": {
+            "padding_x": 36,
+            "padding_y": 8,
+            "gap": 6,
+            "greeting_font_size": 9,
+            "body_font_size": 10,
+            "body_max_lines": 5,
+            "closing_font_size": 9,
+            "separator_width": 48,
+            "postscript_font_size": 9,
+            "postscript_max_lines": 2
+        }
+    },
     "800x480": {
       "preset_props": {
         "padding_x": 56,
